@@ -29,6 +29,23 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - Şifre: `admin123`
   - (Env ile değiştir: `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
 
+## Faz 2: Kategori + Ürün Detay + Slug
+
+- Kategori endpointleri:
+  - `GET /api/categories`
+  - `GET /api/admin/categories`
+  - `POST /api/admin/categories`
+- Ürün detay endpointi: `GET /api/products/:slug`
+- Storefront kategori filtresi + ürün detay sayfası (`/product.html?slug=...`)
+
+## Faz 3: Sipariş Kayıtları + Admin Sipariş Yönetimi
+
+- Checkout sonrası siparişler `api/data/orders.json` içine kaydedilir.
+- Admin sipariş endpointleri:
+  - `GET /api/admin/orders`
+  - `PUT /api/admin/orders/:id/status`
+- Desteklenen durumlar: `pending`, `paid`, `shipped`, `cancelled`
+
 ## Klasör Yapısı
 
 ```txt

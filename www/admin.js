@@ -10,7 +10,8 @@ const els = {
   status: document.getElementById('admin-status'),
   form: document.getElementById('new-product-form'),
   categorySelect: document.getElementById('new-category'),
-  categoryForm: document.getElementById('new-category-form')
+  categoryForm: document.getElementById('new-category-form'),
+  orders: document.getElementById('admin-orders')
 };
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
@@ -86,13 +87,64 @@ async function loadProducts() {
   } catch (e) { els.list.innerHTML = ''; setStatus(e.message, true); }
 }
 
+function orderRow(order) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cart-line';
+  wrap.innerHTML = `
+    <div>
+      <strong>${order.id}</strong>
+      <small>${Number(order.amount).toFixed(2)} ${order.currency} · ${order.customer?.email || '-'}</small>
+      <div style="margin-top:6px;">Durum: <b>${order.status}</b></div>
+    </div>
+    <div class="qty-controls">
+      <button data-os="${order.id}" data-status="pending" class="ghost">Pending</button>
+      <button data-os="${order.id}" data-status="paid" class="ghost">Paid</button>
+      <button data-os="${order.id}" data-status="shipped" class="ghost">Shipped</button>
+      <button data-os="${order.id}" data-status="cancelled" class="danger">Cancelled</button>
+    </div>
+  `;
+
+  wrap.querySelectorAll('[data-os]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await api(`/api/admin/orders/${btn.getAttribute('data-os')}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({ status: btn.getAttribute('data-status') })
+        });
+        setStatus('Sipariş durumu güncellendi.');
+        await loadOrders();
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    });
+  });
+
+  return wrap;
+}
+
+async function loadOrders() {
+  if (!token) { els.orders.textContent = 'Önce admin girişi yapmalısın.'; return; }
+  try {
+    const data = await api('/api/admin/orders');
+    const orders = data.orders || [];
+    els.orders.innerHTML = '';
+    if (!orders.length) {
+      els.orders.textContent = 'Henüz sipariş yok.';
+      return;
+    }
+    orders.forEach((o) => els.orders.appendChild(orderRow(o)));
+  } catch (e) {
+    els.orders.textContent = e.message;
+  }
+}
+
 els.loginBtn.addEventListener('click', async () => {
   try {
     const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim() }) });
     token = data.token;
     localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
-    await Promise.all([loadProducts(), loadCategories()]);
+    await Promise.all([loadProducts(), loadCategories(), loadOrders()]);
   } catch (e) { setLoginStatus(e.message, true); }
 });
 
@@ -127,7 +179,8 @@ els.categoryForm.addEventListener('submit', async (event) => {
 });
 
 if (token) {
-  Promise.all([loadProducts(), loadCategories()]);
+  Promise.all([loadProducts(), loadCategories(), loadOrders()]);
 } else {
   loadProducts();
+  loadOrders();
 }

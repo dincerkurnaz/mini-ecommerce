@@ -1,5 +1,22 @@
 [
-  { "id": "c-giyim", "name": "Giyim", "slug": "giyim" },
-  { "id": "c-aksesuar", "name": "Aksesuar", "slug": "aksesuar" },
-  { "id": "c-yasam", "name": "Yaşam", "slug": "yasam" }
+  {
+    "id": "c-giyim",
+    "name": "Giyim",
+    "slug": "giyim"
+  },
+  {
+    "id": "c-aksesuar",
+    "name": "Aksesuar",
+    "slug": "aksesuar"
+  },
+  {
+    "id": "c-yasam",
+    "name": "Yaşam",
+    "slug": "yasam"
+  },
+  {
+    "id": "c-4c40d3",
+    "name": "Elektronik",
+    "slug": "elektronik"
+  }
 ]

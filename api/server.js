@@ -17,6 +17,7 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 
 const productsPath = path.join(__dirname, 'data', 'products.json');
 const categoriesPath = path.join(__dirname, 'data', 'categories.json');
+const ordersPath = path.join(__dirname, 'data', 'orders.json');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -46,6 +47,8 @@ function readProducts() { return readJson(productsPath, []); }
 function writeProducts(data) { writeJson(productsPath, data); }
 function readCategories() { return readJson(categoriesPath, []); }
 function writeCategories(data) { writeJson(categoriesPath, data); }
+function readOrders() { return readJson(ordersPath, []); }
+function writeOrders(data) { writeJson(ordersPath, data); }
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -119,12 +122,39 @@ app.get('/api/cart/:cartId', (req, res) => {
 });
 
 app.post('/api/checkout', (req, res) => {
-  const { cartId, customer } = req.body || {};
+  const { cartId, customer, shippingMethod, couponCode } = req.body || {};
   const cart = carts.get(cartId);
   if (!cart) return res.status(404).json({ error: 'Checkout için geçerli bir cartId gerekli.' });
   if (!customer || !customer.email) return res.status(400).json({ error: 'Müşteri e-posta bilgisi zorunludur.' });
+
   const orderId = 'ord_' + crypto.randomBytes(6).toString('hex');
-  return res.status(200).json({ orderId, status: 'mock_paid', amount: cart.total, currency: cart.currency, customerEmail: customer.email, paidAt: new Date().toISOString(), message: 'Bu bir mock checkout yanıtıdır. Gerçek ödeme alınmadı.' });
+  const paidAt = new Date().toISOString();
+  const order = {
+    id: orderId,
+    status: 'paid',
+    amount: cart.total,
+    currency: cart.currency,
+    items: cart.items,
+    customer,
+    shippingMethod: shippingMethod || 'standard',
+    couponCode: couponCode || null,
+    createdAt: paidAt,
+    paidAt
+  };
+
+  const orders = readOrders();
+  orders.unshift(order);
+  writeOrders(orders);
+
+  return res.status(200).json({
+    orderId,
+    status: 'mock_paid',
+    amount: cart.total,
+    currency: cart.currency,
+    customerEmail: customer.email,
+    paidAt,
+    message: 'Bu bir mock checkout yanıtıdır. Gerçek ödeme alınmadı.'
+  });
 });
 
 app.post('/api/admin/login', (req, res) => {
@@ -214,6 +244,24 @@ app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
   if (next.length === products.length) return res.status(404).json({ error: 'Ürün bulunamadı' });
   writeProducts(next);
   res.status(200).json({ ok: true });
+});
+
+app.get('/api/admin/orders', requireAdmin, (_, res) => {
+  res.status(200).json({ orders: readOrders() });
+});
+
+app.put('/api/admin/orders/:id/status', requireAdmin, (req, res) => {
+  const { status } = req.body || {};
+  const allowed = ['pending', 'paid', 'shipped', 'cancelled'];
+  if (!allowed.includes(status)) return res.status(400).json({ error: 'Geçersiz durum' });
+
+  const orders = readOrders();
+  const idx = orders.findIndex((o) => o.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'Sipariş bulunamadı' });
+
+  orders[idx] = { ...orders[idx], status, updatedAt: new Date().toISOString() };
+  writeOrders(orders);
+  res.status(200).json({ order: orders[idx] });
 });
 
 app.use((err, _, res, __) => res.status(500).json({ error: err.message || 'Beklenmeyen bir hata oluştu.' }));
