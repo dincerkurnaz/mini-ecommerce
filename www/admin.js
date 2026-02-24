@@ -2,6 +2,7 @@ const config = window.__APP_CONFIG__ || { apiBaseUrl: 'http://localhost:3001' };
 let token = localStorage.getItem('mini_admin_token') || '';
 
 const els = {
+  app: document.getElementById('admin-app'),
   email: document.getElementById('admin-email'),
   password: document.getElementById('admin-password'),
   loginBtn: document.getElementById('login-btn'),
@@ -22,6 +23,7 @@ const els = {
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
 function setLoginStatus(message, isError = false) { els.loginStatus.textContent = message; els.loginStatus.style.color = isError ? '#b00020' : '#0a7a2f'; }
+function setAppVisible(visible) { els.app.style.display = visible ? 'block' : 'none'; }
 
 async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -308,6 +310,7 @@ els.loginBtn.addEventListener('click', async () => {
     token = data.token;
     localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
+    setAppVisible(true);
     await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
   } catch (e) { setLoginStatus(e.message, true); }
 });
@@ -377,12 +380,8 @@ els.campaignForm.addEventListener('submit', async (event) => {
 });
 
 if (token) {
+  setAppVisible(true);
   Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
 } else {
-  loadProducts();
-  loadOrders();
-  loadModules();
-  loadPages();
-  loadCampaigns();
-  loadReports();
+  setAppVisible(false);
 }

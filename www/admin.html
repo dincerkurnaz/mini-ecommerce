@@ -31,8 +31,8 @@
       <a href="/" class="ghost" style="padding:10px 12px;border-radius:10px;text-decoration:none;">Mağazaya dön</a>
     </header>
 
-    <main class="shell layout">
-      <section class="card">
+    <main class="shell">
+      <section class="card" style="max-width:520px;">
         <h2>Admin Giriş</h2>
         <div class="checkout-form">
           <input id="admin-email" type="email" placeholder="admin@mini.local" />
@@ -41,71 +41,75 @@
         </div>
         <p id="login-status" class="status"></p>
       </section>
-
-      <aside class="card">
-        <h2>Yeni Ürün</h2>
-        <form id="new-product-form" class="checkout-form">
-          <input id="new-name" placeholder="Ürün adı" required />
-          <input id="new-price" type="number" step="0.01" placeholder="Fiyat" required />
-          <select id="new-category"></select>
-          <input id="new-image" placeholder="Görsel yolu (/assets/...)" />
-          <input id="new-description" placeholder="Açıklama" />
-          <button type="submit">Ürün Ekle</button>
-        </form>
-
-        <h2 style="margin-top:16px;">Kategori Ekle</h2>
-        <form id="new-category-form" class="checkout-form">
-          <input id="category-name" placeholder="Kategori adı" required />
-          <button type="submit">Kategori Ekle</button>
-        </form>
-      </aside>
     </main>
 
-    <section class="shell card">
-      <h2>Ürünler</h2>
-      <div id="admin-products"></div>
-      <p id="admin-status" class="status"></p>
-    </section>
+    <div id="admin-app" style="display:none;">
+      <main class="shell layout">
+        <aside class="card">
+          <h2>Yeni Ürün</h2>
+          <form id="new-product-form" class="checkout-form">
+            <input id="new-name" placeholder="Ürün adı" required />
+            <input id="new-price" type="number" step="0.01" placeholder="Fiyat" required />
+            <select id="new-category"></select>
+            <input id="new-image" placeholder="Görsel yolu (/assets/...)" />
+            <input id="new-description" placeholder="Açıklama" />
+            <button type="submit">Ürün Ekle</button>
+          </form>
 
-    <section class="shell card">
-      <h2>Siparişler</h2>
-      <div id="admin-orders">Önce admin girişi yapmalısın.</div>
-    </section>
+          <h2 style="margin-top:16px;">Kategori Ekle</h2>
+          <form id="new-category-form" class="checkout-form">
+            <input id="category-name" placeholder="Kategori adı" required />
+            <button type="submit">Kategori Ekle</button>
+          </form>
+        </aside>
+      </main>
 
-    <section class="shell card">
-      <h2>Ödeme / Kargo Modülleri</h2>
-      <div id="admin-modules">Önce admin girişi yapmalısın.</div>
-    </section>
+      <section class="shell card">
+        <h2>Ürünler</h2>
+        <div id="admin-products"></div>
+        <p id="admin-status" class="status"></p>
+      </section>
 
-    <section class="shell card">
-      <h2>CMS Sayfaları</h2>
-      <form id="new-page-form" class="checkout-form">
-        <input id="page-title" placeholder="Sayfa başlığı" required />
-        <input id="page-slug" placeholder="slug (ornek: iade-politikasi)" required />
-        <input id="page-content" placeholder="İçerik" required />
-        <button type="submit">Sayfa Ekle</button>
-      </form>
-      <div id="admin-pages">Önce admin girişi yapmalısın.</div>
-    </section>
+      <section class="shell card">
+        <h2>Siparişler</h2>
+        <div id="admin-orders"></div>
+      </section>
 
-    <section class="shell card">
-      <h2>Kampanyalar</h2>
-      <form id="new-campaign-form" class="checkout-form">
-        <input id="campaign-name" placeholder="Kod (WELCOME15)" required />
-        <select id="campaign-type">
-          <option value="percent">Yüzde</option>
-          <option value="fixed">Sabit</option>
-        </select>
-        <input id="campaign-value" type="number" step="0.01" placeholder="Değer" required />
-        <button type="submit">Kampanya Ekle</button>
-      </form>
-      <div id="admin-campaigns">Önce admin girişi yapmalısın.</div>
-    </section>
+      <section class="shell card">
+        <h2>Ödeme / Kargo Modülleri</h2>
+        <div id="admin-modules"></div>
+      </section>
 
-    <section class="shell card">
-      <h2>Rapor Özeti</h2>
-      <div id="admin-reports">Önce admin girişi yapmalısın.</div>
-    </section>
+      <section class="shell card">
+        <h2>CMS Sayfaları</h2>
+        <form id="new-page-form" class="checkout-form">
+          <input id="page-title" placeholder="Sayfa başlığı" required />
+          <input id="page-slug" placeholder="slug (ornek: iade-politikasi)" required />
+          <input id="page-content" placeholder="İçerik" required />
+          <button type="submit">Sayfa Ekle</button>
+        </form>
+        <div id="admin-pages"></div>
+      </section>
+
+      <section class="shell card">
+        <h2>Kampanyalar</h2>
+        <form id="new-campaign-form" class="checkout-form">
+          <input id="campaign-name" placeholder="Kod (WELCOME15)" required />
+          <select id="campaign-type">
+            <option value="percent">Yüzde</option>
+            <option value="fixed">Sabit</option>
+          </select>
+          <input id="campaign-value" type="number" step="0.01" placeholder="Değer" required />
+          <button type="submit">Kampanya Ekle</button>
+        </form>
+        <div id="admin-campaigns"></div>
+      </section>
+
+      <section class="shell card">
+        <h2>Rapor Özeti</h2>
+        <div id="admin-reports"></div>
+      </section>
+    </div>
 
     <script src="./admin.js" defer></script>
   </body>
