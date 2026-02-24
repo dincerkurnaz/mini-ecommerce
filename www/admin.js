@@ -1,5 +1,6 @@
 const config = window.__APP_CONFIG__ || { apiBaseUrl: 'http://localhost:3001' };
-let token = localStorage.getItem('mini_admin_token') || '';
+let token = '';
+try { localStorage.removeItem('mini_admin_token'); } catch {}
 
 const els = {
   app: document.getElementById('admin-app'),
@@ -318,7 +319,6 @@ els.loginBtn.addEventListener('click', async () => {
   try {
     const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim() }) });
     token = data.token;
-    localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
     setAppVisible(true);
     await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
