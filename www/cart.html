@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sepetim | Mini Commerce</title>
+    <script>
+      (function initConfig() {
+        var host = window.location.hostname;
+        if (host === 'www.localhost') {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'http://api.localhost', cdnBaseUrl: 'http://cdn.localhost' };
+        } else if (host === 'localhost' || host === '127.0.0.1') {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
+        } else {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+        }
+
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = window.__APP_CONFIG__.cdnBaseUrl + '/assets/css/store.css';
+        document.head.appendChild(link);
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="shell header">
+      <div>
+        <h1>Sepetim</h1>
+        <p>Ödeme adımına burada devam et.</p>
+      </div>
+      <a href="/" class="ghost" style="padding:10px 12px;border-radius:10px;text-decoration:none;">Alışverişe dön</a>
+    </header>
+
+    <main class="shell layout">
+      <section class="card">
+        <h2>Ürünler</h2>
+        <div id="cart-items" class="cart-items">Henüz ürün eklenmedi.</div>
+      </section>
+
+      <aside class="card">
+        <div class="coupon-row">
+          <input id="coupon-input" type="text" placeholder="Kupon kodu (WELCOME10)" />
+          <button id="apply-coupon-btn" class="ghost">Uygula</button>
+        </div>
+
+        <div class="shipping-row" id="shipping-methods"></div>
+
+        <div class="shipping-row">
+          <label for="payment-method">Ödeme yöntemi</label>
+          <select id="payment-method"></select>
+        </div>
+
+        <div class="summary">
+          <div><span>Ara toplam</span><strong id="subtotal">0.00 TRY</strong></div>
+          <div><span>Kargo</span><strong id="shipping">0.00 TRY</strong></div>
+          <div><span>İndirim</span><strong id="discount">0.00 TRY</strong></div>
+          <div class="grand"><span>Toplam</span><strong id="grand-total">0.00 TRY</strong></div>
+        </div>
+
+        <form id="checkout-form" class="checkout-form">
+          <h3>Ödeme Bilgileri</h3>
+          <input id="customer-name" type="text" placeholder="Ad Soyad" required />
+          <input id="customer-email" type="email" placeholder="E-posta" required />
+          <input id="customer-phone" type="tel" placeholder="Telefon" required />
+          <input id="customer-address" type="text" placeholder="Teslimat adresi" required />
+          <button id="checkout-btn" type="submit" disabled>Siparişi Tamamla</button>
+        </form>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </aside>
+    </main>
+
+    <script src="./cart.js" defer></script>
+  </body>
+</html>

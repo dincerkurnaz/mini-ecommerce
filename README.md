@@ -98,6 +98,7 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - `GET /api/auth/orders` (Bearer token, kullanıcıya ait siparişler)
 - Checkout sırasında geçerli Bearer token varsa siparişe `userId` ve `userEmail` alanları eklenir.
 - UI: müşteri hesabı ayrı sayfada (`/account.html`) yönetilir.
+- Sepet/checkout ayrı sayfaya taşındı: `/cart.html` (ana sayfada ürün odaklı sade liste).
 
 ## Klasör Yapısı
 
