@@ -68,14 +68,21 @@ function renderOrders(orders) {
     return;
   }
 
-  els.ordersList.innerHTML = orders.map((o) => `
-    <div class="cart-line">
-      <div>
-        <strong>${o.id}</strong>
-        <small>${o.status} · ${Number(o.amount).toFixed(2)} ${o.currency}</small>
+  els.ordersList.innerHTML = orders.map((o) => {
+    const items = (o.items || []).map((i) => `${i.name || i.productId} x${i.quantity}`).join(', ');
+    const date = o.createdAt ? new Date(o.createdAt).toLocaleString('tr-TR') : '-';
+    return `
+      <div class="cart-line">
+        <div>
+          <strong>${o.id}</strong>
+          <small>${o.status} · ${Number(o.amount).toFixed(2)} ${o.currency}</small>
+          <div style="margin-top:6px;"><b>Tarih:</b> ${date}</div>
+          <div><b>Ürünler:</b> ${items || '-'}</div>
+          <div><b>Kargo/Ödeme:</b> ${o.shippingMethod || '-'} / ${o.paymentMethod || '-'}</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 async function syncSession() {
