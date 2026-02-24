@@ -19,6 +19,7 @@ const productsPath = path.join(__dirname, 'data', 'products.json');
 const categoriesPath = path.join(__dirname, 'data', 'categories.json');
 const ordersPath = path.join(__dirname, 'data', 'orders.json');
 const modulesPath = path.join(__dirname, 'data', 'modules.json');
+const pagesPath = path.join(__dirname, 'data', 'pages.json');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -56,6 +57,8 @@ function readModules() {
   return readJson(modulesPath, { shippingMethods: [], paymentMethods: [] });
 }
 function writeModules(data) { writeJson(modulesPath, data); }
+function readPages() { return readJson(pagesPath, []); }
+function writePages(data) { writeJson(pagesPath, data); }
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -110,6 +113,12 @@ app.get('/api/products/:slug', (req, res) => {
 });
 
 app.get('/api/categories', (_, res) => res.status(200).json({ categories: readCategories() }));
+app.get('/api/pages', (_, res) => res.status(200).json({ pages: readPages() }));
+app.get('/api/pages/:slug', (req, res) => {
+  const page = readPages().find((p) => p.slug === req.params.slug);
+  if (!page) return res.status(404).json({ error: 'Sayfa bulunamadı' });
+  return res.status(200).json({ page });
+});
 
 app.get('/api/config/checkout-methods', (_, res) => {
   const modules = readModules();
@@ -191,6 +200,7 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/products', requireAdmin, (_, res) => res.status(200).json({ products: readProducts() }));
 app.get('/api/admin/categories', requireAdmin, (_, res) => res.status(200).json({ categories: readCategories() }));
 app.get('/api/admin/modules', requireAdmin, (_, res) => res.status(200).json(readModules()));
+app.get('/api/admin/pages', requireAdmin, (_, res) => res.status(200).json({ pages: readPages() }));
 
 app.post('/api/admin/categories', requireAdmin, (req, res) => {
   const { name } = req.body || {};
@@ -284,6 +294,34 @@ app.put('/api/admin/modules/:type/:code', requireAdmin, (req, res) => {
   modules[key][idx] = { ...modules[key][idx], enabled };
   writeModules(modules);
   res.status(200).json({ module: modules[key][idx] });
+});
+
+app.post('/api/admin/pages', requireAdmin, (req, res) => {
+  const { title, slug, content } = req.body || {};
+  if (!title || !slug) return res.status(400).json({ error: 'title ve slug zorunlu' });
+  const pages = readPages();
+  if (pages.some((p) => p.slug === slug)) return res.status(400).json({ error: 'slug zaten kullanılıyor' });
+  const page = { id: 'pg-' + crypto.randomBytes(3).toString('hex'), title, slug, content: content || '', updatedAt: new Date().toISOString() };
+  pages.push(page);
+  writePages(pages);
+  res.status(201).json({ page });
+});
+
+app.put('/api/admin/pages/:id', requireAdmin, (req, res) => {
+  const pages = readPages();
+  const idx = pages.findIndex((p) => p.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'Sayfa bulunamadı' });
+  pages[idx] = { ...pages[idx], ...req.body, id: pages[idx].id, updatedAt: new Date().toISOString() };
+  writePages(pages);
+  res.status(200).json({ page: pages[idx] });
+});
+
+app.delete('/api/admin/pages/:id', requireAdmin, (req, res) => {
+  const pages = readPages();
+  const next = pages.filter((p) => p.id !== req.params.id);
+  if (next.length === pages.length) return res.status(404).json({ error: 'Sayfa bulunamadı' });
+  writePages(next);
+  res.status(200).json({ ok: true });
 });
 
 app.get('/api/admin/orders', requireAdmin, (_, res) => {

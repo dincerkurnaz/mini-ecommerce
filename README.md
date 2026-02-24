@@ -56,6 +56,23 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - `PUT /api/admin/modules/:type/:code` (`type`: `shipping` veya `payment`)
 - Checkout artık yalnızca aktif modüllere izin verir.
 
+## Faz 5: CMS Sayfa Yönetimi + SEO
+
+- CMS sayfa verisi: `api/data/pages.json`
+- Public page endpointleri:
+  - `GET /api/pages`
+  - `GET /api/pages/:slug`
+- Admin page endpointleri:
+  - `GET /api/admin/pages`
+  - `POST /api/admin/pages`
+  - `PUT /api/admin/pages/:id`
+  - `DELETE /api/admin/pages/:id`
+- Frontend ekleri:
+  - `www/page.html` + `www/page.js`
+  - `www/robots.txt`
+  - `www/sitemap.xml`
+  - ana sayfada canonical/robots/OG + JSON-LD (Organization)
+
 ## Klasör Yapısı
 
 ```txt

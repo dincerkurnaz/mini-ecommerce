@@ -12,7 +12,9 @@ const els = {
   categorySelect: document.getElementById('new-category'),
   categoryForm: document.getElementById('new-category-form'),
   orders: document.getElementById('admin-orders'),
-  modules: document.getElementById('admin-modules')
+  modules: document.getElementById('admin-modules'),
+  pages: document.getElementById('admin-pages'),
+  pageForm: document.getElementById('new-page-form')
 };
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
@@ -186,13 +188,65 @@ async function loadModules() {
   }
 }
 
+function pageRow(page) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cart-line';
+  wrap.innerHTML = `
+    <div>
+      <strong>${page.title}</strong>
+      <small>slug: ${page.slug}</small>
+      <div style="margin-top:6px;">${page.content || ''}</div>
+    </div>
+    <div class="qty-controls">
+      <button data-pedit="${page.id}" class="ghost">Düzenle</button>
+      <button data-pdel="${page.id}" class="danger">Sil</button>
+    </div>
+  `;
+
+  wrap.querySelector('[data-pedit]').addEventListener('click', async () => {
+    const content = prompt('Yeni içerik', page.content || '');
+    if (content === null) return;
+    try {
+      await api(`/api/admin/pages/${page.id}`, { method: 'PUT', body: JSON.stringify({ content }) });
+      setStatus('Sayfa güncellendi.');
+      await loadPages();
+    } catch (e) { setStatus(e.message, true); }
+  });
+
+  wrap.querySelector('[data-pdel]').addEventListener('click', async () => {
+    try {
+      await api(`/api/admin/pages/${page.id}`, { method: 'DELETE' });
+      setStatus('Sayfa silindi.');
+      await loadPages();
+    } catch (e) { setStatus(e.message, true); }
+  });
+
+  return wrap;
+}
+
+async function loadPages() {
+  if (!token) { els.pages.textContent = 'Önce admin girişi yapmalısın.'; return; }
+  try {
+    const data = await api('/api/admin/pages');
+    const pages = data.pages || [];
+    els.pages.innerHTML = '';
+    if (!pages.length) {
+      els.pages.textContent = 'Sayfa yok.';
+      return;
+    }
+    pages.forEach((p) => els.pages.appendChild(pageRow(p)));
+  } catch (e) {
+    els.pages.textContent = e.message;
+  }
+}
+
 els.loginBtn.addEventListener('click', async () => {
   try {
     const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim() }) });
     token = data.token;
     localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
-    await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules()]);
+    await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages()]);
   } catch (e) { setLoginStatus(e.message, true); }
 });
 
@@ -226,10 +280,28 @@ els.categoryForm.addEventListener('submit', async (event) => {
   } catch (e) { setStatus(e.message, true); }
 });
 
+els.pageForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  try {
+    await api('/api/admin/pages', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: document.getElementById('page-title').value.trim(),
+        slug: document.getElementById('page-slug').value.trim(),
+        content: document.getElementById('page-content').value.trim()
+      })
+    });
+    setStatus('Sayfa eklendi.');
+    els.pageForm.reset();
+    await loadPages();
+  } catch (e) { setStatus(e.message, true); }
+});
+
 if (token) {
-  Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules()]);
+  Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages()]);
 } else {
   loadProducts();
   loadOrders();
   loadModules();
+  loadPages();
 }
