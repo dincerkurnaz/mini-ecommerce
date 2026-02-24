@@ -43,6 +43,12 @@ function formatTRY(value) {
   return `${value.toFixed(2)} TRY`;
 }
 
+function imageSrc(path) {
+  if (!path) return `${config.cdnBaseUrl}/assets/images/products/tshirt.svg`;
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+  return `${config.cdnBaseUrl}${path}`;
+}
+
 function setStatus(message, isError = false) {
   els.status.textContent = message;
   els.status.style.color = isError ? '#b00020' : '#0a7a2f';
@@ -167,7 +173,7 @@ function renderProducts() {
     card.className = 'product card';
     card.innerHTML = `
       <a href="/product.html?slug=${encodeURIComponent(product.slug || '')}" style="text-decoration:none;color:inherit;">
-        <img src="${config.cdnBaseUrl}${product.image}" alt="${product.name}" loading="lazy" />
+        <img src="${imageSrc(product.image)}" alt="${product.name}" loading="lazy" />
         <h3>${product.name}</h3>
       </a>
       <p>${product.description}</p>

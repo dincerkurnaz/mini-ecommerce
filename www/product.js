@@ -2,6 +2,11 @@ const config = window.__APP_CONFIG__ || { apiBaseUrl: 'http://localhost:3001', c
 const target = document.getElementById('product-detail');
 
 function formatTRY(value) { return `${Number(value).toFixed(2)} TRY`; }
+function imageSrc(path) {
+  if (!path) return `${config.cdnBaseUrl}/assets/images/products/tshirt.svg`;
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+  return `${config.cdnBaseUrl}${path}`;
+}
 
 async function load() {
   const slug = new URLSearchParams(window.location.search).get('slug');
@@ -19,7 +24,7 @@ async function load() {
     target.innerHTML = `
       <div class="layout" style="grid-template-columns: 1fr 1fr;">
         <div class="card">
-          <img src="${config.cdnBaseUrl}${p.image}" alt="${p.name}" style="width:100%;border-radius:10px;" />
+          <img src="${imageSrc(p.image)}" alt="${p.name}" style="width:100%;border-radius:10px;" />
         </div>
         <div class="card">
           <h2>${p.name}</h2>

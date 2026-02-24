@@ -18,12 +18,22 @@ const els = {
   pageForm: document.getElementById('new-page-form'),
   campaignForm: document.getElementById('new-campaign-form'),
   campaigns: document.getElementById('admin-campaigns'),
-  reports: document.getElementById('admin-reports')
+  reports: document.getElementById('admin-reports'),
+  imageFile: document.getElementById('new-image-file')
 };
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
 function setLoginStatus(message, isError = false) { els.loginStatus.textContent = message; els.loginStatus.style.color = isError ? '#b00020' : '#0a7a2f'; }
 function setAppVisible(visible) { els.app.style.display = visible ? 'block' : 'none'; }
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Dosya okunamadı'));
+    reader.readAsDataURL(file);
+  });
+}
 
 async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -318,13 +328,17 @@ els.loginBtn.addEventListener('click', async () => {
 els.form.addEventListener('submit', async (event) => {
   event.preventDefault();
   try {
+    const selectedFile = els.imageFile.files && els.imageFile.files[0];
+    const imageFromInput = document.getElementById('new-image').value.trim();
+    const uploadedDataUrl = selectedFile ? await fileToDataUrl(selectedFile) : '';
+
     await api('/api/admin/products', {
       method: 'POST',
       body: JSON.stringify({
         name: document.getElementById('new-name').value.trim(),
         price: Number(document.getElementById('new-price').value),
         category: document.getElementById('new-category').value || 'genel',
-        image: document.getElementById('new-image').value.trim() || '/assets/images/products/tshirt.svg',
+        image: uploadedDataUrl || imageFromInput || '/assets/images/products/tshirt.svg',
         description: document.getElementById('new-description').value.trim()
       })
     });
