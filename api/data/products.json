@@ -2,28 +2,45 @@
   {
     "id": "p-101",
     "name": "Minimal Beyaz T-Shirt",
+    "slug": "minimal-beyaz-t-shirt",
     "price": 499.9,
     "currency": "TRY",
     "category": "giyim",
+    "categorySlug": "giyim",
     "description": "Günlük kullanıma uygun, %100 pamuk oversize kesim.",
     "image": "/assets/images/products/tshirt.svg"
   },
   {
     "id": "p-102",
     "name": "Kanvas Günlük Çanta",
+    "slug": "kanvas-gunluk-canta",
     "price": 899.9,
     "currency": "TRY",
     "category": "aksesuar",
+    "categorySlug": "aksesuar",
     "description": "Laptop bölmeli, suya dayanıklı city tote.",
     "image": "/assets/images/products/bag.svg"
   },
   {
     "id": "p-103",
     "name": "Paslanmaz Çelik Matara",
+    "slug": "paslanmaz-celik-matara",
     "price": 349.9,
     "currency": "TRY",
     "category": "yaşam",
+    "categorySlug": "yasam",
     "description": "750ml, çift katman yalıtım ile 12 saat soğuk tutar.",
     "image": "/assets/images/products/bottle.svg"
+  },
+  {
+    "id": "p-126",
+    "name": "Test Hoodie",
+    "slug": "test-hoodie",
+    "price": 799.9,
+    "currency": "TRY",
+    "category": "giyim",
+    "categorySlug": "giyim",
+    "description": "Faz1 test urunu",
+    "image": "/assets/images/products/tshirt.svg"
   }
 ]

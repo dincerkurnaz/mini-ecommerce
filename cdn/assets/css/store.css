@@ -40,7 +40,7 @@ body {
 
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr 200px;
+  grid-template-columns: 1fr 220px 220px;
   gap: 0.7rem;
 }
 

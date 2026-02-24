@@ -47,10 +47,16 @@
         <form id="new-product-form" class="checkout-form">
           <input id="new-name" placeholder="Ürün adı" required />
           <input id="new-price" type="number" step="0.01" placeholder="Fiyat" required />
-          <input id="new-category" placeholder="Kategori" />
+          <select id="new-category"></select>
           <input id="new-image" placeholder="Görsel yolu (/assets/...)" />
           <input id="new-description" placeholder="Açıklama" />
           <button type="submit">Ürün Ekle</button>
+        </form>
+
+        <h2 style="margin-top:16px;">Kategori Ekle</h2>
+        <form id="new-category-form" class="checkout-form">
+          <input id="category-name" placeholder="Kategori adı" required />
+          <button type="submit">Kategori Ekle</button>
         </form>
       </aside>
     </main>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ürün Detayı | Mini Commerce</title>
+    <script>
+      (function initConfig() {
+        var host = window.location.hostname;
+        if (host === 'www.localhost') window.__APP_CONFIG__ = { apiBaseUrl: 'http://api.localhost', cdnBaseUrl: 'http://cdn.localhost' };
+        else if (host === 'localhost' || host === '127.0.0.1') window.__APP_CONFIG__ = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
+        else window.__APP_CONFIG__ = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = window.__APP_CONFIG__.cdnBaseUrl + '/assets/css/store.css';
+        document.head.appendChild(link);
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="shell header">
+      <div>
+        <h1>Ürün Detayı</h1>
+        <p><a href="/" style="text-decoration:none;">← Mağazaya dön</a></p>
+      </div>
+    </header>
+    <main class="shell card" id="product-detail">Yükleniyor...</main>
+    <script src="./product.js" defer></script>
+  </body>
+</html>

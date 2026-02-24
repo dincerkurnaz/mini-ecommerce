@@ -14,7 +14,8 @@ const state = {
   couponCode: '',
   shippingMethod: 'standard',
   query: '',
-  sort: 'featured'
+  sort: 'featured',
+  category: ''
 };
 
 const els = {
@@ -28,6 +29,7 @@ const els = {
   status: document.getElementById('status'),
   checkoutBtn: document.getElementById('checkout-btn'),
   searchInput: document.getElementById('search-input'),
+  categorySelect: document.getElementById('category-select'),
   sortSelect: document.getElementById('sort-select'),
   couponInput: document.getElementById('coupon-input'),
   applyCouponBtn: document.getElementById('apply-coupon-btn'),
@@ -82,6 +84,10 @@ function getVisibleProducts() {
   if (state.query.trim()) {
     const q = state.query.toLowerCase();
     result = result.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+  }
+
+  if (state.category) {
+    result = result.filter((p) => (p.categorySlug || '').toLowerCase() === state.category);
   }
 
   if (state.sort === 'price_asc') result.sort((a, b) => a.price - b.price);
@@ -153,8 +159,10 @@ function renderProducts() {
     const card = document.createElement('article');
     card.className = 'product card';
     card.innerHTML = `
-      <img src="${config.cdnBaseUrl}${product.image}" alt="${product.name}" loading="lazy" />
-      <h3>${product.name}</h3>
+      <a href="/product.html?slug=${encodeURIComponent(product.slug || '')}" style="text-decoration:none;color:inherit;">
+        <img src="${config.cdnBaseUrl}${product.image}" alt="${product.name}" loading="lazy" />
+        <h3>${product.name}</h3>
+      </a>
       <p>${product.description}</p>
       <div class="product-meta">
         <span class="pill">${product.category}</span>
@@ -298,6 +306,11 @@ function wireEvents() {
     renderProducts();
   });
 
+  els.categorySelect.addEventListener('change', (e) => {
+    state.category = e.target.value;
+    renderProducts();
+  });
+
   els.sortSelect.addEventListener('change', (e) => {
     state.sort = e.target.value;
     renderProducts();
@@ -341,8 +354,25 @@ async function loadProductsFromApi() {
   }
 }
 
+async function loadCategoriesFromApi() {
+  try {
+    const res = await fetch(`${config.apiBaseUrl}/api/categories`);
+    const data = await res.json();
+    const categories = data.categories || [];
+    els.categorySelect.innerHTML = '<option value="">Kategori: Tümü</option>';
+    categories.forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.slug;
+      opt.textContent = `Kategori: ${c.name}`;
+      els.categorySelect.appendChild(opt);
+    });
+  } catch {
+    els.categorySelect.innerHTML = '<option value="">Kategori: Tümü</option>';
+  }
+}
+
 async function bootstrap() {
-  await loadProductsFromApi();
+  await Promise.all([loadProductsFromApi(), loadCategoriesFromApi()]);
   loadCart();
   wireEvents();
   renderProducts();
