@@ -87,6 +87,17 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - `GET /api/admin/reports/summary`
   - toplam sipariş, ciro, düşük stok adedi, top ürünler
 
+## Faz 7: Müşteri Üyeliği
+
+- Müşteri veri kaydı: `api/data/users.json`
+- Parola saklama: `crypto.scrypt` + rastgele salt (plain text saklanmaz)
+- Müşteri auth endpointleri:
+  - `POST /api/auth/register` (`{name,email,password}`)
+  - `POST /api/auth/login` (`{email,password}`)
+  - `GET /api/auth/me` (Bearer token)
+  - `GET /api/auth/orders` (Bearer token, kullanıcıya ait siparişler)
+- Checkout sırasında geçerli Bearer token varsa siparişe `userId` ve `userEmail` alanları eklenir.
+
 ## Klasör Yapısı
 
 ```txt

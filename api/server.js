@@ -13,6 +13,7 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://www.localhost:3000,h
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@mini.local';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 const adminSessions = new Map();
+const customerSessions = new Map();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 
 const productsPath = path.join(__dirname, 'data', 'products.json');
@@ -21,6 +22,7 @@ const ordersPath = path.join(__dirname, 'data', 'orders.json');
 const modulesPath = path.join(__dirname, 'data', 'modules.json');
 const pagesPath = path.join(__dirname, 'data', 'pages.json');
 const campaignsPath = path.join(__dirname, 'data', 'campaigns.json');
+const usersPath = path.join(__dirname, 'data', 'users.json');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -62,6 +64,8 @@ function readPages() { return readJson(pagesPath, []); }
 function writePages(data) { writeJson(pagesPath, data); }
 function readCampaigns() { return readJson(campaignsPath, []); }
 function writeCampaigns(data) { writeJson(campaignsPath, data); }
+function readUsers() { return readJson(usersPath, []); }
+function writeUsers(data) { writeJson(usersPath, data); }
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -104,6 +108,7 @@ function calculateCartTotals(items) {
 function cleanExpiredSessions() {
   const now = Date.now();
   for (const [token, session] of adminSessions.entries()) if (session.expiresAt <= now) adminSessions.delete(token);
+  for (const [token, session] of customerSessions.entries()) if (session.expiresAt <= now) customerSessions.delete(token);
 }
 
 function requireAdmin(req, res, next) {
@@ -112,6 +117,51 @@ function requireAdmin(req, res, next) {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token || !adminSessions.has(token)) return res.status(401).json({ error: 'Yetkisiz erişim' });
   req.admin = adminSessions.get(token);
+  return next();
+}
+
+function parseBearerToken(req) {
+  const auth = req.headers.authorization || '';
+  return auth.startsWith('Bearer ') ? auth.slice(7) : null;
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [salt, hash] = stored.split(':');
+  if (!salt || !hash) return false;
+  const hashedAttempt = crypto.scryptSync(password, salt, 64);
+  const hashBuffer = Buffer.from(hash, 'hex');
+  if (hashBuffer.length !== hashedAttempt.length) return false;
+  return crypto.timingSafeEqual(hashBuffer, hashedAttempt);
+}
+
+function getCustomerFromRequest(req) {
+  cleanExpiredSessions();
+  const token = parseBearerToken(req);
+  if (!token || !customerSessions.has(token)) return null;
+  const session = customerSessions.get(token);
+  const user = readUsers().find((u) => u.id === session.userId);
+  if (!user) {
+    customerSessions.delete(token);
+    return null;
+  }
+  return { token, session, user };
+}
+
+function requireCustomer(req, res, next) {
+  const customer = getCustomerFromRequest(req);
+  if (!customer) return res.status(401).json({ error: 'Yetkisiz erişim' });
+  req.customer = customer;
   return next();
 }
 
@@ -196,6 +246,7 @@ app.post('/api/checkout', (req, res) => {
 
   const orderId = 'ord_' + crypto.randomBytes(6).toString('hex');
   const paidAt = new Date().toISOString();
+  const authenticatedCustomer = getCustomerFromRequest(req);
   const order = {
     id: orderId,
     status: 'paid',
@@ -207,6 +258,8 @@ app.post('/api/checkout', (req, res) => {
     paymentMethod: selectedPayment.code,
     couponCode: couponCode || null,
     campaignId: selectedCampaign ? selectedCampaign.id : null,
+    userId: authenticatedCustomer ? authenticatedCustomer.user.id : null,
+    userEmail: authenticatedCustomer ? authenticatedCustomer.user.email : null,
     createdAt: paidAt,
     paidAt
   };
@@ -234,6 +287,62 @@ app.post('/api/admin/login', (req, res) => {
   const expiresAt = Date.now() + SESSION_TTL_MS;
   adminSessions.set(token, { email, expiresAt });
   return res.status(200).json({ token, expiresAt });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { name, email, password } = req.body || {};
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedName = String(name || '').trim();
+  if (!normalizedName || !normalizedEmail || !password) {
+    return res.status(400).json({ error: 'name, email ve password zorunludur' });
+  }
+  if (!normalizedEmail.includes('@')) return res.status(400).json({ error: 'Geçerli bir e-posta girin' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'Şifre en az 6 karakter olmalı' });
+
+  const users = readUsers();
+  if (users.some((u) => u.email === normalizedEmail)) return res.status(409).json({ error: 'Bu e-posta zaten kayıtlı' });
+
+  const now = new Date().toISOString();
+  const user = {
+    id: 'u-' + crypto.randomBytes(6).toString('hex'),
+    name: normalizedName,
+    email: normalizedEmail,
+    passwordHash: hashPassword(String(password)),
+    createdAt: now,
+    updatedAt: now
+  };
+  users.push(user);
+  writeUsers(users);
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  customerSessions.set(token, { userId: user.id, expiresAt });
+  return res.status(201).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body || {};
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password) return res.status(400).json({ error: 'email ve password zorunludur' });
+
+  const user = readUsers().find((u) => u.email === normalizedEmail);
+  if (!user || !verifyPassword(String(password), user.passwordHash)) return res.status(401).json({ error: 'Geçersiz giriş bilgisi' });
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  customerSessions.set(token, { userId: user.id, expiresAt });
+  return res.status(200).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
+});
+
+app.get('/api/auth/me', requireCustomer, (req, res) => {
+  const { user, session } = req.customer;
+  return res.status(200).json({ user: { id: user.id, name: user.name, email: user.email }, expiresAt: session.expiresAt });
+});
+
+app.get('/api/auth/orders', requireCustomer, (req, res) => {
+  const { user } = req.customer;
+  const orders = readOrders().filter((order) => order.userId === user.id || order.userEmail === user.email);
+  return res.status(200).json({ orders });
 });
 
 app.get('/api/admin/products', requireAdmin, (_, res) => res.status(200).json({ products: readProducts() }));
