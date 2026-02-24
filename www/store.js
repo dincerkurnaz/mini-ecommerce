@@ -3,32 +3,7 @@ const config = window.__APP_CONFIG__ || {
   cdnBaseUrl: 'http://localhost:3002'
 };
 
-const products = [
-  {
-    id: 'p-101',
-    name: 'Minimal Beyaz T-Shirt',
-    price: 499.9,
-    category: 'giyim',
-    description: 'Günlük kullanıma uygun, %100 pamuk oversize kesim.',
-    image: '/assets/images/products/tshirt.svg'
-  },
-  {
-    id: 'p-102',
-    name: 'Kanvas Günlük Çanta',
-    price: 899.9,
-    category: 'aksesuar',
-    description: 'Laptop bölmeli, suya dayanıklı city tote.',
-    image: '/assets/images/products/bag.svg'
-  },
-  {
-    id: 'p-103',
-    name: 'Paslanmaz Çelik Matara',
-    price: 349.9,
-    category: 'yaşam',
-    description: '750ml, çift katman yalıtım ile 12 saat soğuk tutar.',
-    image: '/assets/images/products/bottle.svg'
-  }
-];
+let products = [];
 
 const STORAGE_KEY = 'mini_cart_v2';
 const COUPONS = { WELCOME10: 0.1, MINI50: 50 };
@@ -137,16 +112,19 @@ function updateQuantity(productId, next) {
 }
 
 function computeTotals() {
-  const items = [...state.cart.entries()].map(([productId, quantity]) => {
-    const product = products.find((p) => p.id === productId);
-    return {
-      productId,
-      name: product.name,
-      unitPrice: product.price,
-      quantity,
-      lineTotal: product.price * quantity
-    };
-  });
+  const items = [...state.cart.entries()]
+    .map(([productId, quantity]) => {
+      const product = products.find((p) => p.id === productId);
+      if (!product) return null;
+      return {
+        productId,
+        name: product.name,
+        unitPrice: product.price,
+        quantity,
+        lineTotal: product.price * quantity
+      };
+    })
+    .filter(Boolean);
 
   const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
   const shipping = state.cart.size === 0 ? 0 : SHIPPING[state.shippingMethod];
@@ -353,7 +331,22 @@ function wireEvents() {
   els.checkoutForm.addEventListener('submit', checkout);
 }
 
-loadCart();
-wireEvents();
-renderProducts();
-renderCart();
+async function loadProductsFromApi() {
+  try {
+    const res = await fetch(`${config.apiBaseUrl}/api/products`);
+    const data = await res.json();
+    products = data.products || [];
+  } catch {
+    products = [];
+  }
+}
+
+async function bootstrap() {
+  await loadProductsFromApi();
+  loadCart();
+  wireEvents();
+  renderProducts();
+  renderCart();
+}
+
+bootstrap();

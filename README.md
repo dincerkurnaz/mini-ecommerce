@@ -15,6 +15,20 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
 - LocalStorage ile sepeti koruma (sayfa yenilense de sepet kalır)
 - Checkout form doğrulaması (ad, e-posta, telefon, adres)
 
+## Faz 1 (CMS Temeli): Admin + Ürün CRUD
+
+- Admin giriş endpoint: `POST /api/admin/login`
+- Admin ürün endpointleri:
+  - `GET /api/admin/products`
+  - `POST /api/admin/products`
+  - `PUT /api/admin/products/:id`
+  - `DELETE /api/admin/products/:id`
+- Admin panel: `http://localhost:3000/admin.html`
+- Varsayılan demo admin bilgisi:
+  - E-posta: `admin@mini.local`
+  - Şifre: `admin123`
+  - (Env ile değiştir: `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
+
 ## Klasör Yapısı
 
 ```txt
