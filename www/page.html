@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="index,follow" />
     <title>Sayfa | Mini Commerce</title>
+    <script src="./runtime-config.js"></script>
     <script>
       (function initConfig() {
         var host = window.location.hostname;
         if (host === 'www.localhost') window.__APP_CONFIG__ = { apiBaseUrl: 'http://api.localhost', cdnBaseUrl: 'http://cdn.localhost' };
         else if (host === 'localhost' || host === '127.0.0.1') window.__APP_CONFIG__ = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
-        else window.__APP_CONFIG__ = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+        else window.__APP_CONFIG__ = {
+          apiBaseUrl: window.__RUNTIME_CONFIG__?.APP_API_BASE_URL || 'https://api.example.com',
+          cdnBaseUrl: window.__RUNTIME_CONFIG__?.APP_CDN_BASE_URL || 'https://cdn.example.com'
+        };
         var link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = window.__APP_CONFIG__.cdnBaseUrl + '/assets/css/store.css';

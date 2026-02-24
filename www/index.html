@@ -18,6 +18,7 @@
         "url": "http://localhost:3000"
       }
     </script>
+    <script src="./runtime-config.js"></script>
     <script>
       (function initConfig() {
         var host = window.location.hostname;
@@ -28,7 +29,10 @@
         } else if (host === 'localhost' || host === '127.0.0.1') {
           config = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
         } else {
-          config = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+          config = {
+            apiBaseUrl: window.__RUNTIME_CONFIG__?.APP_API_BASE_URL || 'https://api.example.com',
+            cdnBaseUrl: window.__RUNTIME_CONFIG__?.APP_CDN_BASE_URL || 'https://cdn.example.com'
+          };
         }
 
         window.__APP_CONFIG__ = config;

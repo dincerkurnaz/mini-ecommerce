@@ -99,6 +99,7 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
 - Checkout sırasında geçerli Bearer token varsa siparişe `userId` ve `userEmail` alanları eklenir.
 - UI: müşteri hesabı ayrı sayfada (`/account.html`) yönetilir.
 - Sepet/checkout ayrı sayfaya taşındı: `/cart.html` (ana sayfada ürün odaklı sade liste).
+- Runtime domain ayarı için `www/runtime-config.js` kullanılır (`APP_API_BASE_URL`, `APP_CDN_BASE_URL`).
 
 ## Güvenlik Güncellemesi (İstediğin 4 ve 6)
 
