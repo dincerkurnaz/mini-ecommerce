@@ -10,6 +10,22 @@ const port = process.env.PORT || 3001;
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://www.localhost:3000,http://127.0.0.1:3000,http://localhost:3000,https://www.example.com')
   .split(',').map((v) => v.trim()).filter(Boolean);
 
+const allowedOriginHosts = allowedOrigins.map((origin) => {
+  try { return new URL(origin).host.toLowerCase(); } catch { return origin.toLowerCase(); }
+});
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  const normalized = String(origin).trim().toLowerCase();
+  if (allowedOrigins.includes(normalized)) return true;
+  try {
+    const host = new URL(normalized).host.toLowerCase();
+    return allowedOriginHosts.includes(host);
+  } catch {
+    return false;
+  }
+}
+
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@mini.local';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -28,7 +44,12 @@ const sessionsPath = path.join(__dirname, 'data', 'sessions.json');
 const authStatePath = path.join(__dirname, 'data', 'auth_state.json');
 const auditLogPath = path.join(__dirname, 'data', 'audit.log');
 
-app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
+app.use(cors({
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(new Error('CORS blocked for origin: ' + origin));
+  }
+}));
 app.use(express.json({ limit: '100kb' }));
 
 const carts = new Map();
