@@ -293,6 +293,10 @@ app.post('/api/checkout', (req, res) => {
   const orderId = 'ord_' + crypto.randomBytes(6).toString('hex');
   const paidAt = new Date().toISOString();
   const authenticatedCustomer = getCustomerFromRequest(req);
+
+  if (couponCode && !authenticatedCustomer) {
+    return res.status(401).json({ error: 'Kupon kodu kullanımı için giriş yapmalısınız.' });
+  }
   const order = {
     id: orderId,
     status: 'paid',

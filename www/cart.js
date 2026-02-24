@@ -171,23 +171,39 @@ function validateCheckoutForm() {
   return null;
 }
 
+function setCouponAccess(isLoggedIn) {
+  els.couponInput.disabled = !isLoggedIn;
+  els.applyCouponBtn.disabled = !isLoggedIn;
+  if (!isLoggedIn) {
+    state.couponCode = '';
+    els.couponInput.value = '';
+    persistCart();
+    renderCart();
+    setStatus('Kupon kullanımı için giriş yapmalısınız.');
+  }
+}
+
 async function hydrateCheckoutFromUser() {
   if (!state.customerToken) {
     if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
+    setCouponAccess(false);
     return;
   }
   try {
     const res = await fetch(`${config.apiBaseUrl}/api/auth/me`, { headers: authHeaders() });
     if (!res.ok) {
       if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
+      setCouponAccess(false);
       return;
     }
     const data = await res.json();
     document.getElementById('customer-name').value = data.user?.name || '';
     document.getElementById('customer-email').value = data.user?.email || '';
     if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'none';
+    setCouponAccess(true);
   } catch {
     if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
+    setCouponAccess(false);
   }
 }
 
@@ -293,6 +309,11 @@ function wireEvents() {
   });
 
   els.applyCouponBtn.addEventListener('click', () => {
+    if (!state.customerToken) {
+      setStatus('Kupon kullanımı için giriş yapmalısınız.', true);
+      return;
+    }
+
     const code = els.couponInput.value.trim().toUpperCase();
     if (!code) {
       state.couponCode = '';
