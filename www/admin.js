@@ -1,12 +1,11 @@
 const config = window.__APP_CONFIG__ || { apiBaseUrl: 'http://localhost:3001' };
-const ADMIN_TOKEN_KEY = 'mini_admin_token';
-let token = localStorage.getItem(ADMIN_TOKEN_KEY) || sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
+let token = '';
+try { localStorage.removeItem('mini_admin_token'); sessionStorage.removeItem('mini_admin_token'); } catch {}
 
 const els = {
   app: document.getElementById('admin-app'),
   email: document.getElementById('admin-email'),
   password: document.getElementById('admin-password'),
-  remember: document.getElementById('admin-remember'),
   loginBtn: document.getElementById('login-btn'),
   loginStatus: document.getElementById('login-status'),
   list: document.getElementById('admin-products'),
@@ -318,16 +317,8 @@ async function loadReports() {
 
 els.loginBtn.addEventListener('click', async () => {
   try {
-    const rememberMe = !!els.remember.checked;
-    const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim(), rememberMe }) });
+    const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim(), rememberMe: false }) });
     token = data.token;
-    if (rememberMe) {
-      localStorage.setItem(ADMIN_TOKEN_KEY, token);
-      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
-    } else {
-      sessionStorage.setItem(ADMIN_TOKEN_KEY, token);
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-    }
     setLoginStatus('Giriş başarılı.');
     setAppVisible(true);
     await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
