@@ -2,7 +2,7 @@ const config = window.__APP_CONFIG__ || { apiBaseUrl: 'http://localhost:3001' };
 const CUSTOMER_TOKEN_KEY = 'mini_customer_token';
 
 const state = {
-  token: localStorage.getItem(CUSTOMER_TOKEN_KEY) || '',
+  token: localStorage.getItem(CUSTOMER_TOKEN_KEY) || sessionStorage.getItem(CUSTOMER_TOKEN_KEY) || '',
   user: null
 };
 
@@ -11,6 +11,7 @@ const els = {
   registerForm: document.getElementById('customer-register-form'),
   loginEmail: document.getElementById('customer-login-email'),
   loginPassword: document.getElementById('customer-login-password'),
+  loginRemember: document.getElementById('customer-login-remember'),
   registerName: document.getElementById('customer-register-name'),
   registerEmail: document.getElementById('customer-register-email'),
   registerPassword: document.getElementById('customer-register-password'),
@@ -34,11 +35,21 @@ function authHeaders() {
   return headers;
 }
 
-function setSession(token, user) {
+function setSession(token, user, rememberMe = false) {
   state.token = token;
   state.user = user;
-  if (token) localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
-  else localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  if (token) {
+    if (rememberMe) {
+      localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+      sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    } else {
+      sessionStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+      localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    }
+  } else {
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  }
 }
 
 function renderAuth() {
@@ -95,14 +106,15 @@ async function syncSession() {
 async function login(event) {
   event.preventDefault();
   try {
+    const rememberMe = !!els.loginRemember.checked;
     const res = await fetch(`${config.apiBaseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: els.loginEmail.value.trim(), password: els.loginPassword.value.trim() })
+      body: JSON.stringify({ email: els.loginEmail.value.trim(), password: els.loginPassword.value.trim(), rememberMe })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Giriş başarısız');
-    setSession(data.token, data.user);
+    setSession(data.token, data.user, rememberMe);
     els.loginForm.reset();
     setStatus('Giriş başarılı.');
     await syncSession();
@@ -120,12 +132,13 @@ async function register(event) {
       body: JSON.stringify({
         name: els.registerName.value.trim(),
         email: els.registerEmail.value.trim(),
-        password: els.registerPassword.value.trim()
+        password: els.registerPassword.value.trim(),
+        rememberMe: true
       })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Kayıt başarısız');
-    setSession(data.token, data.user);
+    setSession(data.token, data.user, true);
     els.registerForm.reset();
     setStatus('Kayıt başarılı.');
     await syncSession();

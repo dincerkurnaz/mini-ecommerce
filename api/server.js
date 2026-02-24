@@ -13,6 +13,7 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://www.localhost:3000,h
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@mini.local';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
+const SESSION_TTL_REMEMBER_MS = Number(process.env.SESSION_TTL_REMEMBER_MS || 1000 * 60 * 60 * 24 * 30);
 const ADMIN_MAX_ATTEMPTS = Number(process.env.ADMIN_MAX_ATTEMPTS || 5);
 const ADMIN_LOCK_MS = Number(process.env.ADMIN_LOCK_MS || 15 * 60 * 1000);
 
@@ -124,9 +125,9 @@ function cleanExpiredSessions() {
   return active;
 }
 
-function createSession(role, payload = {}) {
+function createSession(role, payload = {}, ttlMs = SESSION_TTL_MS) {
   const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = Date.now() + SESSION_TTL_MS;
+  const expiresAt = Date.now() + ttlMs;
   const sessions = cleanExpiredSessions();
   sessions.push({ token, role, expiresAt, ...payload });
   writeSessions(sessions);
@@ -326,7 +327,7 @@ app.post('/api/checkout', (req, res) => {
 });
 
 app.post('/api/admin/login', (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, rememberMe } = req.body || {};
   const key = adminAttemptKey(email, req.ip);
   const fail = getAdminFailRecord(key);
 
@@ -344,13 +345,14 @@ app.post('/api/admin/login', (req, res) => {
   }
 
   clearAdminFailRecord(key);
-  const { token, expiresAt } = createSession('admin', { email: normalizeEmail(email) });
+  const ttl = rememberMe ? SESSION_TTL_REMEMBER_MS : SESSION_TTL_MS;
+  const { token, expiresAt } = createSession('admin', { email: normalizeEmail(email) }, ttl);
   audit('admin_login_success', { email: normalizeEmail(email), ip: req.ip, expiresAt });
   return res.status(200).json({ token, expiresAt });
 });
 
 app.post('/api/auth/register', (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, rememberMe } = req.body || {};
   const normalizedEmail = normalizeEmail(email);
   const normalizedName = String(name || '').trim();
   if (!normalizedName || !normalizedEmail || !password) {
@@ -374,20 +376,22 @@ app.post('/api/auth/register', (req, res) => {
   users.push(user);
   writeUsers(users);
 
-  const { token, expiresAt } = createSession('customer', { userId: user.id });
+  const ttl = rememberMe ? SESSION_TTL_REMEMBER_MS : SESSION_TTL_MS;
+  const { token, expiresAt } = createSession('customer', { userId: user.id }, ttl);
   audit('customer_register', { userId: user.id, email: user.email, ip: req.ip });
   return res.status(201).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, rememberMe } = req.body || {};
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail || !password) return res.status(400).json({ error: 'email ve password zorunludur' });
 
   const user = readUsers().find((u) => u.email === normalizedEmail);
   if (!user || !verifyPassword(String(password), user.passwordHash)) return res.status(401).json({ error: 'Geçersiz giriş bilgisi' });
 
-  const { token, expiresAt } = createSession('customer', { userId: user.id });
+  const ttl = rememberMe ? SESSION_TTL_REMEMBER_MS : SESSION_TTL_MS;
+  const { token, expiresAt } = createSession('customer', { userId: user.id }, ttl);
   audit('customer_login_success', { userId: user.id, email: user.email, ip: req.ip });
   return res.status(200).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
 });
