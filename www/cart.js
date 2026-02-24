@@ -26,7 +26,8 @@ const els = {
   applyCouponBtn: document.getElementById('apply-coupon-btn'),
   checkoutForm: document.getElementById('checkout-form'),
   paymentMethod: document.getElementById('payment-method'),
-  shippingMethods: document.getElementById('shipping-methods')
+  shippingMethods: document.getElementById('shipping-methods'),
+  memberBenefitBox: document.getElementById('member-benefit-box')
 };
 
 function formatTRY(value) { return `${value.toFixed(2)} TRY`; }
@@ -171,15 +172,22 @@ function validateCheckoutForm() {
 }
 
 async function hydrateCheckoutFromUser() {
-  if (!state.customerToken) return;
+  if (!state.customerToken) {
+    if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
+    return;
+  }
   try {
     const res = await fetch(`${config.apiBaseUrl}/api/auth/me`, { headers: authHeaders() });
-    if (!res.ok) return;
+    if (!res.ok) {
+      if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
+      return;
+    }
     const data = await res.json();
     document.getElementById('customer-name').value = data.user?.name || '';
     document.getElementById('customer-email').value = data.user?.email || '';
+    if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'none';
   } catch {
-    // ignore
+    if (els.memberBenefitBox) els.memberBenefitBox.style.display = 'block';
   }
 }
 
