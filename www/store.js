@@ -7,7 +7,7 @@ let products = [];
 
 const STORAGE_KEY = 'mini_cart_v2';
 const COUPONS = { WELCOME10: 0.1, MINI50: 50 };
-const SHIPPING = { standard: 79.9, express: 129.9 };
+let SHIPPING = { standard: 79.9, express: 129.9 };
 
 const state = {
   cart: new Map(),
@@ -15,7 +15,8 @@ const state = {
   shippingMethod: 'standard',
   query: '',
   sort: 'featured',
-  category: ''
+  category: '',
+  paymentMethod: 'mock_card'
 };
 
 const els = {
@@ -33,7 +34,9 @@ const els = {
   sortSelect: document.getElementById('sort-select'),
   couponInput: document.getElementById('coupon-input'),
   applyCouponBtn: document.getElementById('apply-coupon-btn'),
-  checkoutForm: document.getElementById('checkout-form')
+  checkoutForm: document.getElementById('checkout-form'),
+  paymentMethod: document.getElementById('payment-method'),
+  shippingMethods: document.getElementById('shipping-methods')
 };
 
 function formatTRY(value) {
@@ -49,7 +52,8 @@ function persistCart() {
   const payload = {
     items: [...state.cart.entries()],
     couponCode: state.couponCode,
-    shippingMethod: state.shippingMethod
+    shippingMethod: state.shippingMethod,
+    paymentMethod: state.paymentMethod
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
@@ -72,6 +76,9 @@ function loadCart() {
       state.shippingMethod = parsed.shippingMethod;
       const radio = document.querySelector(`input[name="shipping"][value="${parsed.shippingMethod}"]`);
       if (radio) radio.checked = true;
+    }
+    if (parsed.paymentMethod) {
+      state.paymentMethod = parsed.paymentMethod;
     }
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -280,6 +287,7 @@ async function checkout(event) {
           address: document.getElementById('customer-address').value.trim()
         },
         shippingMethod: state.shippingMethod,
+        paymentMethod: state.paymentMethod,
         couponCode: state.couponCode,
         frontendTotal: total
       })
@@ -316,12 +324,17 @@ function wireEvents() {
     renderProducts();
   });
 
-  document.querySelectorAll('input[name="shipping"]').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      state.shippingMethod = radio.value;
+  els.shippingMethods.addEventListener('change', (e) => {
+    if (e.target && e.target.name === 'shipping') {
+      state.shippingMethod = e.target.value;
       persistCart();
       renderCart();
-    });
+    }
+  });
+
+  els.paymentMethod.addEventListener('change', (e) => {
+    state.paymentMethod = e.target.value;
+    persistCart();
   });
 
   els.applyCouponBtn.addEventListener('click', () => {
@@ -371,8 +384,39 @@ async function loadCategoriesFromApi() {
   }
 }
 
+async function loadCheckoutMethodsFromApi() {
+  try {
+    const res = await fetch(`${config.apiBaseUrl}/api/config/checkout-methods`);
+    const data = await res.json();
+    const shippingMethods = data.shippingMethods || [];
+    const paymentMethods = data.paymentMethods || [];
+
+    if (shippingMethods.length) {
+      SHIPPING = Object.fromEntries(shippingMethods.map((m) => [m.code, Number(m.price || 0)]));
+      els.shippingMethods.innerHTML = shippingMethods.map((m, i) =>
+        `<label><input type="radio" name="shipping" value="${m.code}" ${i === 0 ? 'checked' : ''} /> ${m.title} (${formatTRY(Number(m.price || 0))})</label>`
+      ).join('');
+      state.shippingMethod = shippingMethods[0].code;
+    }
+
+    if (paymentMethods.length) {
+      els.paymentMethod.innerHTML = paymentMethods.map((m) =>
+        `<option value="${m.code}">${m.title}</option>`
+      ).join('');
+      if (paymentMethods.some((m) => m.code === state.paymentMethod)) {
+        els.paymentMethod.value = state.paymentMethod;
+      } else {
+        state.paymentMethod = paymentMethods[0].code;
+        els.paymentMethod.value = state.paymentMethod;
+      }
+    }
+  } catch {
+    els.paymentMethod.innerHTML = '<option value="mock_card">Kredi Kartı (Mock)</option>';
+  }
+}
+
 async function bootstrap() {
-  await Promise.all([loadProductsFromApi(), loadCategoriesFromApi()]);
+  await Promise.all([loadProductsFromApi(), loadCategoriesFromApi(), loadCheckoutMethodsFromApi()]);
   loadCart();
   wireEvents();
   renderProducts();

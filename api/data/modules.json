@@ -1,0 +1,11 @@
+{
+  "shippingMethods": [
+    { "code": "standard", "title": "Standart", "price": 79.9, "enabled": true },
+    { "code": "express", "title": "Express", "price": 129.9, "enabled": true }
+  ],
+  "paymentMethods": [
+    { "code": "mock_card", "title": "Kredi Kartı (Mock)", "enabled": true },
+    { "code": "bank_transfer", "title": "Havale/EFT (Mock)", "enabled": true },
+    { "code": "cash_on_delivery", "title": "Kapıda Ödeme (Mock)", "enabled": false }
+  ]
+}

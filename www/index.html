@@ -65,9 +65,14 @@
           <button id="apply-coupon-btn" class="ghost">Uygula</button>
         </div>
 
-        <div class="shipping-row">
+        <div class="shipping-row" id="shipping-methods">
           <label><input type="radio" name="shipping" value="standard" checked /> Standart (79.90 TRY)</label>
           <label><input type="radio" name="shipping" value="express" /> Express (129.90 TRY)</label>
+        </div>
+
+        <div class="shipping-row">
+          <label for="payment-method">Ödeme yöntemi</label>
+          <select id="payment-method"></select>
         </div>
 
         <div id="summary" class="summary">

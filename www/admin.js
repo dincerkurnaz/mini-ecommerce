@@ -11,7 +11,8 @@ const els = {
   form: document.getElementById('new-product-form'),
   categorySelect: document.getElementById('new-category'),
   categoryForm: document.getElementById('new-category-form'),
-  orders: document.getElementById('admin-orders')
+  orders: document.getElementById('admin-orders'),
+  modules: document.getElementById('admin-modules')
 };
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
@@ -138,13 +139,60 @@ async function loadOrders() {
   }
 }
 
+function moduleRow(type, item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cart-line';
+  wrap.innerHTML = `
+    <div>
+      <strong>${item.title}</strong>
+      <small>${type} · code: ${item.code}</small>
+    </div>
+    <div class="qty-controls">
+      <button data-type="${type}" data-code="${item.code}" data-enabled="true" class="ghost">Aktif</button>
+      <button data-type="${type}" data-code="${item.code}" data-enabled="false" class="danger">Pasif</button>
+    </div>
+  `;
+
+  wrap.querySelectorAll('[data-type]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await api(`/api/admin/modules/${btn.getAttribute('data-type')}/${btn.getAttribute('data-code')}`, {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: btn.getAttribute('data-enabled') === 'true' })
+        });
+        setStatus('Modül güncellendi.');
+        await loadModules();
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    });
+  });
+
+  return wrap;
+}
+
+async function loadModules() {
+  if (!token) { els.modules.textContent = 'Önce admin girişi yapmalısın.'; return; }
+  try {
+    const data = await api('/api/admin/modules');
+    els.modules.innerHTML = '<h3>Kargo</h3>';
+    (data.shippingMethods || []).forEach((m) => els.modules.appendChild(moduleRow('shipping', m)));
+    const pTitle = document.createElement('h3');
+    pTitle.textContent = 'Ödeme';
+    els.modules.appendChild(pTitle);
+    (data.paymentMethods || []).forEach((m) => els.modules.appendChild(moduleRow('payment', m)));
+  } catch (e) {
+    els.modules.textContent = e.message;
+  }
+}
+
 els.loginBtn.addEventListener('click', async () => {
   try {
     const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim() }) });
     token = data.token;
     localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
-    await Promise.all([loadProducts(), loadCategories(), loadOrders()]);
+    await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules()]);
   } catch (e) { setLoginStatus(e.message, true); }
 });
 
@@ -179,8 +227,9 @@ els.categoryForm.addEventListener('submit', async (event) => {
 });
 
 if (token) {
-  Promise.all([loadProducts(), loadCategories(), loadOrders()]);
+  Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules()]);
 } else {
   loadProducts();
   loadOrders();
+  loadModules();
 }

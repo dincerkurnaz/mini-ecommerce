@@ -46,6 +46,16 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - `PUT /api/admin/orders/:id/status`
 - Desteklenen durumlar: `pending`, `paid`, `shipped`, `cancelled`
 
+## Faz 4: Ödeme/Kargo Modül Yapısı
+
+- Modül konfigürasyonu: `api/data/modules.json`
+- Public checkout method endpoint:
+  - `GET /api/config/checkout-methods`
+- Admin modül yönetimi endpointleri:
+  - `GET /api/admin/modules`
+  - `PUT /api/admin/modules/:type/:code` (`type`: `shipping` veya `payment`)
+- Checkout artık yalnızca aktif modüllere izin verir.
+
 ## Klasör Yapısı
 
 ```txt

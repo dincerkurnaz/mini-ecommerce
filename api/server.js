@@ -18,6 +18,7 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const productsPath = path.join(__dirname, 'data', 'products.json');
 const categoriesPath = path.join(__dirname, 'data', 'categories.json');
 const ordersPath = path.join(__dirname, 'data', 'orders.json');
+const modulesPath = path.join(__dirname, 'data', 'modules.json');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -35,7 +36,9 @@ function slugify(text = '') {
 function readJson(filePath, fallback = []) {
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    return Array.isArray(parsed) ? parsed : fallback;
+    if (Array.isArray(fallback)) return Array.isArray(parsed) ? parsed : fallback;
+    if (typeof fallback === 'object') return parsed && typeof parsed === 'object' ? parsed : fallback;
+    return parsed;
   } catch { return fallback; }
 }
 
@@ -49,6 +52,10 @@ function readCategories() { return readJson(categoriesPath, []); }
 function writeCategories(data) { writeJson(categoriesPath, data); }
 function readOrders() { return readJson(ordersPath, []); }
 function writeOrders(data) { writeJson(ordersPath, data); }
+function readModules() {
+  return readJson(modulesPath, { shippingMethods: [], paymentMethods: [] });
+}
+function writeModules(data) { writeJson(modulesPath, data); }
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -104,6 +111,14 @@ app.get('/api/products/:slug', (req, res) => {
 
 app.get('/api/categories', (_, res) => res.status(200).json({ categories: readCategories() }));
 
+app.get('/api/config/checkout-methods', (_, res) => {
+  const modules = readModules();
+  res.status(200).json({
+    shippingMethods: (modules.shippingMethods || []).filter((m) => m.enabled),
+    paymentMethods: (modules.paymentMethods || []).filter((m) => m.enabled)
+  });
+});
+
 app.post('/api/cart', (req, res) => {
   try {
     const { items } = req.body || {};
@@ -122,10 +137,16 @@ app.get('/api/cart/:cartId', (req, res) => {
 });
 
 app.post('/api/checkout', (req, res) => {
-  const { cartId, customer, shippingMethod, couponCode } = req.body || {};
+  const { cartId, customer, shippingMethod, paymentMethod, couponCode } = req.body || {};
   const cart = carts.get(cartId);
   if (!cart) return res.status(404).json({ error: 'Checkout için geçerli bir cartId gerekli.' });
   if (!customer || !customer.email) return res.status(400).json({ error: 'Müşteri e-posta bilgisi zorunludur.' });
+
+  const modules = readModules();
+  const selectedShipping = (modules.shippingMethods || []).find((m) => m.code === (shippingMethod || 'standard') && m.enabled);
+  const selectedPayment = (modules.paymentMethods || []).find((m) => m.code === (paymentMethod || 'mock_card') && m.enabled);
+  if (!selectedShipping) return res.status(400).json({ error: 'Geçersiz veya pasif kargo yöntemi.' });
+  if (!selectedPayment) return res.status(400).json({ error: 'Geçersiz veya pasif ödeme yöntemi.' });
 
   const orderId = 'ord_' + crypto.randomBytes(6).toString('hex');
   const paidAt = new Date().toISOString();
@@ -136,7 +157,8 @@ app.post('/api/checkout', (req, res) => {
     currency: cart.currency,
     items: cart.items,
     customer,
-    shippingMethod: shippingMethod || 'standard',
+    shippingMethod: selectedShipping.code,
+    paymentMethod: selectedPayment.code,
     couponCode: couponCode || null,
     createdAt: paidAt,
     paidAt
@@ -168,6 +190,7 @@ app.post('/api/admin/login', (req, res) => {
 
 app.get('/api/admin/products', requireAdmin, (_, res) => res.status(200).json({ products: readProducts() }));
 app.get('/api/admin/categories', requireAdmin, (_, res) => res.status(200).json({ categories: readCategories() }));
+app.get('/api/admin/modules', requireAdmin, (_, res) => res.status(200).json(readModules()));
 
 app.post('/api/admin/categories', requireAdmin, (req, res) => {
   const { name } = req.body || {};
@@ -244,6 +267,23 @@ app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
   if (next.length === products.length) return res.status(404).json({ error: 'Ürün bulunamadı' });
   writeProducts(next);
   res.status(200).json({ ok: true });
+});
+
+app.put('/api/admin/modules/:type/:code', requireAdmin, (req, res) => {
+  const { type, code } = req.params;
+  const { enabled } = req.body || {};
+  if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled boolean olmalı' });
+
+  const modules = readModules();
+  const key = type === 'shipping' ? 'shippingMethods' : type === 'payment' ? 'paymentMethods' : null;
+  if (!key) return res.status(400).json({ error: 'Geçersiz modül tipi' });
+
+  const idx = (modules[key] || []).findIndex((m) => m.code === code);
+  if (idx < 0) return res.status(404).json({ error: 'Modül bulunamadı' });
+
+  modules[key][idx] = { ...modules[key][idx], enabled };
+  writeModules(modules);
+  res.status(200).json({ module: modules[key][idx] });
 });
 
 app.get('/api/admin/orders', requireAdmin, (_, res) => {

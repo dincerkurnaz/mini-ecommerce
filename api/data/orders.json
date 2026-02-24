@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "ord_3cac4f0d4e28",
+    "status": "shipped",
+    "amount": 579.8,
+    "currency": "TRY",
+    "items": [
+      {
+        "productId": "p-101",
+        "name": "Minimal Beyaz T-Shirt",
+        "unitPrice": 499.9,
+        "quantity": 1,
+        "lineTotal": 499.9
+      }
+    ],
+    "customer": {
+      "email": "test@example.com",
+      "name": "Test",
+      "phone": "0555",
+      "address": "Kadikoy"
+    },
+    "shippingMethod": "standard",
+    "couponCode": null,
+    "createdAt": "2026-02-24T12:03:42.796Z",
+    "paidAt": "2026-02-24T12:03:42.796Z",
+    "updatedAt": "2026-02-24T12:03:42.840Z"
+  }
+]
