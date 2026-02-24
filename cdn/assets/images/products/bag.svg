@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" role="img" aria-label="Bag">
+  <rect width="800" height="500" fill="#eef3ff"/>
+  <rect x="240" y="140" width="320" height="250" rx="24" fill="#ffffff" stroke="#aec2ff" stroke-width="8"/>
+  <path d="M320 170c0-50 30-80 80-80s80 30 80 80" fill="none" stroke="#7a95e8" stroke-width="16"/>
+</svg>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Commerce | www</title>
+    <meta name="description" content="3 ürünlü, hesapsız standart e-ticaret storefront" />
+    <script>
+      (function initConfig() {
+        var host = window.location.hostname;
+        var config;
+
+        if (host === 'www.localhost') {
+          config = { apiBaseUrl: 'http://api.localhost', cdnBaseUrl: 'http://cdn.localhost' };
+        } else if (host === 'localhost' || host === '127.0.0.1') {
+          config = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
+        } else {
+          config = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+        }
+
+        window.__APP_CONFIG__ = config;
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = config.cdnBaseUrl + '/assets/css/store.css';
+        document.head.appendChild(link);
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="shell header">
+      <div>
+        <h1>Mini Commerce</h1>
+        <p>Üyeliksiz alışveriş · Güvenli ödeme simülasyonu · Hızlı teslimat</p>
+      </div>
+      <div class="header-badge">Sepet: <strong id="header-cart-count">0</strong></div>
+    </header>
+
+    <section class="shell toolbar">
+      <input id="search-input" type="search" placeholder="Ürün ara..." />
+      <select id="sort-select">
+        <option value="featured">Sırala: Öne çıkan</option>
+        <option value="price_asc">Fiyat artan</option>
+        <option value="price_desc">Fiyat azalan</option>
+        <option value="name_asc">İsim A-Z</option>
+      </select>
+    </section>
+
+    <main class="shell layout">
+      <section>
+        <div class="grid" id="product-list"></div>
+      </section>
+
+      <aside class="cart card">
+        <h2>Sepet</h2>
+        <div id="cart-items" class="cart-items">Henüz ürün eklenmedi.</div>
+
+        <div class="coupon-row">
+          <input id="coupon-input" type="text" placeholder="Kupon kodu (WELCOME10)" />
+          <button id="apply-coupon-btn" class="ghost">Uygula</button>
+        </div>
+
+        <div class="shipping-row">
+          <label><input type="radio" name="shipping" value="standard" checked /> Standart (79.90 TRY)</label>
+          <label><input type="radio" name="shipping" value="express" /> Express (129.90 TRY)</label>
+        </div>
+
+        <div id="summary" class="summary">
+          <div><span>Ara toplam</span><strong id="subtotal">0.00 TRY</strong></div>
+          <div><span>Kargo</span><strong id="shipping">0.00 TRY</strong></div>
+          <div><span>İndirim</span><strong id="discount">0.00 TRY</strong></div>
+          <div class="grand"><span>Toplam</span><strong id="grand-total">0.00 TRY</strong></div>
+        </div>
+
+        <form id="checkout-form" class="checkout-form">
+          <h3>Misafir Ödeme</h3>
+          <input id="customer-name" type="text" placeholder="Ad Soyad" required />
+          <input id="customer-email" type="email" placeholder="E-posta" required />
+          <input id="customer-phone" type="tel" placeholder="Telefon" required />
+          <input id="customer-address" type="text" placeholder="Teslimat adresi" required />
+          <button id="checkout-btn" type="submit" disabled>Siparişi Tamamla</button>
+        </form>
+
+        <p id="status" class="status" aria-live="polite"></p>
+      </aside>
+    </main>
+
+    <footer class="shell footer">
+      <small>İade: 14 gün · Destek: destek@mini-commerce.local · KVKK & Mesafeli satış sözleşmesi (demo)</small>
+    </footer>
+
+    <script src="./store.js" defer></script>
+  </body>
+</html>

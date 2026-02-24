@@ -1,0 +1,23 @@
+{
+  "name": "mini-ecommerce",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal ecommerce starter with static storefront + Express API + CDN-ready assets",
+  "scripts": {
+    "dev": "concurrently -k -n WWW,API,CDN \"npm:dev:www\" \"npm:dev:api\" \"npm:dev:cdn\"",
+    "dev:www": "http-server ./www -p 3000 -c-1 --cors",
+    "dev:api": "node ./api/server.js",
+    "dev:cdn": "http-server ./cdn -p 3002 -c-1 --cors"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

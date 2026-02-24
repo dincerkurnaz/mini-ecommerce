@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" role="img" aria-label="Bottle">
+  <rect width="800" height="500" fill="#eef3ff"/>
+  <rect x="345" y="90" width="110" height="70" rx="16" fill="#d6e2ff"/>
+  <rect x="315" y="150" width="170" height="260" rx="52" fill="#ffffff" stroke="#aec2ff" stroke-width="8"/>
+  <rect x="340" y="190" width="120" height="180" rx="40" fill="#f6f9ff"/>
+</svg>

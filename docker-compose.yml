@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: mini-ecommerce-api
+    environment:
+      - PORT=3001
+      - CORS_ORIGINS=http://www.localhost,http://localhost:3000,http://127.0.0.1:3000
+    networks:
+      - mini_net
+
+  www:
+    image: nginx:1.27-alpine
+    container_name: mini-ecommerce-www
+    volumes:
+      - ./www:/usr/share/nginx/html:ro
+      - ./www/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - mini_net
+
+  cdn:
+    image: nginx:1.27-alpine
+    container_name: mini-ecommerce-cdn
+    volumes:
+      - ./cdn:/usr/share/nginx/html:ro
+      - ./cdn/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - mini_net
+
+  edge:
+    image: nginx:1.27-alpine
+    container_name: mini-ecommerce-edge
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - www
+      - cdn
+    networks:
+      - mini_net
+
+networks:
+  mini_net:
+    driver: bridge
