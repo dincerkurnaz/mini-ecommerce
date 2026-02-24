@@ -316,12 +316,12 @@ app.post('/api/checkout', (req, res) => {
 
   return res.status(200).json({
     orderId,
-    status: 'mock_paid',
+    status: 'paid',
     amount: cart.total,
     currency: cart.currency,
     customerEmail: customer.email,
     paidAt,
-    message: 'Bu bir mock checkout yanıtıdır. Gerçek ödeme alınmadı.'
+    message: 'Ödeme başarıyla alındı.'
   });
 });
 

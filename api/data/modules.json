@@ -16,17 +16,17 @@
   "paymentMethods": [
     {
       "code": "mock_card",
-      "title": "Kredi Kartı (Mock)",
+      "title": "Kredi Kartı",
       "enabled": true
     },
     {
       "code": "bank_transfer",
-      "title": "Havale/EFT (Mock)",
+      "title": "Havale/EFT",
       "enabled": true
     },
     {
       "code": "cash_on_delivery",
-      "title": "Kapıda Ödeme (Mock)",
+      "title": "Kapıda Ödeme",
       "enabled": false
     }
   ]

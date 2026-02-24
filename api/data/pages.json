@@ -3,14 +3,14 @@
     "id": "pg-about",
     "title": "Hakkımızda",
     "slug": "hakkimizda",
-    "content": "Mini Commerce demo mağazasıdır. Hızlı, sade ve ölçeklenebilir e-ticaret altyapısı hedeflenmiştir.",
+    "content": "Mini Commerce mağazasıdır. Hızlı, sade ve ölçeklenebilir e-ticaret altyapısı hedeflenmiştir.",
     "updatedAt": "2026-02-24T12:15:00.000Z"
   },
   {
     "id": "pg-kvkk",
     "title": "KVKK",
     "slug": "kvkk",
-    "content": "Kişisel verileriniz demo amaçlı işlenmez. Gerçek ortamda KVKK metnini hukuk danışmanınızla güncelleyin.",
+    "content": "Kişisel verileriniz KVKK kapsamında işlenir. KVKK metnini hukuk danışmanınızla güncelleyin.",
     "updatedAt": "2026-02-24T12:15:00.000Z"
   }
 ]
