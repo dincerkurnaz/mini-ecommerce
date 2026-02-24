@@ -175,7 +175,8 @@ function renderProducts() {
         <span class="pill">${product.category}</span>
         <strong>${formatTRY(product.price)}</strong>
       </div>
-      <button data-add="${product.id}">Sepete Ekle</button>
+      <small>Stok: ${Number(product.stock || 0)}</small>
+      <button data-add="${product.id}" ${Number(product.stock || 0) <= 0 ? 'disabled' : ''}>Sepete Ekle</button>
     `;
     card.querySelector('button').addEventListener('click', () => addToCart(product.id));
     els.list.appendChild(card);

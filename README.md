@@ -73,6 +73,20 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
   - `www/sitemap.xml`
   - ana sayfada canonical/robots/OG + JSON-LD (Organization)
 
+## Faz 6: Stok + Kampanya + Raporlama
+
+- Ürünlerde stok alanı (`stock`) ve opsiyonel varyant listesi (`variants`)
+- Checkout sonrası stok düşümü
+- Kampanya verisi: `api/data/campaigns.json`
+- Kampanya endpointleri:
+  - `GET /api/campaigns`
+  - `GET /api/admin/campaigns`
+  - `POST /api/admin/campaigns`
+  - `PUT /api/admin/campaigns/:id`
+- Rapor endpointi:
+  - `GET /api/admin/reports/summary`
+  - toplam sipariş, ciro, düşük stok adedi, top ürünler
+
 ## Klasör Yapısı
 
 ```txt

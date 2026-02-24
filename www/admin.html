@@ -88,6 +88,25 @@
       <div id="admin-pages">Önce admin girişi yapmalısın.</div>
     </section>
 
+    <section class="shell card">
+      <h2>Kampanyalar</h2>
+      <form id="new-campaign-form" class="checkout-form">
+        <input id="campaign-name" placeholder="Kod (WELCOME15)" required />
+        <select id="campaign-type">
+          <option value="percent">Yüzde</option>
+          <option value="fixed">Sabit</option>
+        </select>
+        <input id="campaign-value" type="number" step="0.01" placeholder="Değer" required />
+        <button type="submit">Kampanya Ekle</button>
+      </form>
+      <div id="admin-campaigns">Önce admin girişi yapmalısın.</div>
+    </section>
+
+    <section class="shell card">
+      <h2>Rapor Özeti</h2>
+      <div id="admin-reports">Önce admin girişi yapmalısın.</div>
+    </section>
+
     <script src="./admin.js" defer></script>
   </body>
 </html>

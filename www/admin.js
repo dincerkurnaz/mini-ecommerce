@@ -14,7 +14,10 @@ const els = {
   orders: document.getElementById('admin-orders'),
   modules: document.getElementById('admin-modules'),
   pages: document.getElementById('admin-pages'),
-  pageForm: document.getElementById('new-page-form')
+  pageForm: document.getElementById('new-page-form'),
+  campaignForm: document.getElementById('new-campaign-form'),
+  campaigns: document.getElementById('admin-campaigns'),
+  reports: document.getElementById('admin-reports')
 };
 
 function setStatus(message, isError = false) { els.status.textContent = message; els.status.style.color = isError ? '#b00020' : '#0a7a2f'; }
@@ -240,13 +243,72 @@ async function loadPages() {
   }
 }
 
+function campaignRow(campaign) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cart-line';
+  wrap.innerHTML = `
+    <div>
+      <strong>${campaign.name}</strong>
+      <small>${campaign.type} · ${campaign.value}</small>
+      <div style="margin-top:6px;">Durum: <b>${campaign.enabled ? 'aktif' : 'pasif'}</b></div>
+    </div>
+    <div class="qty-controls">
+      <button data-cid="${campaign.id}" data-enabled="true" class="ghost">Aktif</button>
+      <button data-cid="${campaign.id}" data-enabled="false" class="danger">Pasif</button>
+    </div>
+  `;
+
+  wrap.querySelectorAll('[data-cid]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await api(`/api/admin/campaigns/${btn.getAttribute('data-cid')}`, {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: btn.getAttribute('data-enabled') === 'true' })
+        });
+        setStatus('Kampanya güncellendi.');
+        await loadCampaigns();
+      } catch (e) { setStatus(e.message, true); }
+    });
+  });
+
+  return wrap;
+}
+
+async function loadCampaigns() {
+  if (!token) { els.campaigns.textContent = 'Önce admin girişi yapmalısın.'; return; }
+  try {
+    const data = await api('/api/admin/campaigns');
+    const campaigns = data.campaigns || [];
+    els.campaigns.innerHTML = '';
+    if (!campaigns.length) {
+      els.campaigns.textContent = 'Kampanya yok.';
+      return;
+    }
+    campaigns.forEach((c) => els.campaigns.appendChild(campaignRow(c)));
+  } catch (e) { els.campaigns.textContent = e.message; }
+}
+
+async function loadReports() {
+  if (!token) { els.reports.textContent = 'Önce admin girişi yapmalısın.'; return; }
+  try {
+    const data = await api('/api/admin/reports/summary');
+    const top = (data.topProducts || []).map((p) => `${p.name}: ${p.sold}`).join(' · ');
+    els.reports.innerHTML = `
+      <div>Toplam Sipariş: <b>${data.totalOrders}</b></div>
+      <div>Toplam Ciro: <b>${Number(data.totalRevenue).toFixed(2)} TRY</b></div>
+      <div>Düşük Stok Ürün: <b>${data.lowStockCount}</b></div>
+      <div>Top ürünler: ${top || '-'}</div>
+    `;
+  } catch (e) { els.reports.textContent = e.message; }
+}
+
 els.loginBtn.addEventListener('click', async () => {
   try {
     const data = await api('/api/admin/login', { method: 'POST', headers: {}, body: JSON.stringify({ email: els.email.value.trim(), password: els.password.value.trim() }) });
     token = data.token;
     localStorage.setItem('mini_admin_token', token);
     setLoginStatus('Giriş başarılı.');
-    await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages()]);
+    await Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
   } catch (e) { setLoginStatus(e.message, true); }
 });
 
@@ -297,11 +359,30 @@ els.pageForm.addEventListener('submit', async (event) => {
   } catch (e) { setStatus(e.message, true); }
 });
 
+els.campaignForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  try {
+    await api('/api/admin/campaigns', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('campaign-name').value.trim(),
+        type: document.getElementById('campaign-type').value,
+        value: Number(document.getElementById('campaign-value').value)
+      })
+    });
+    setStatus('Kampanya eklendi.');
+    els.campaignForm.reset();
+    await loadCampaigns();
+  } catch (e) { setStatus(e.message, true); }
+});
+
 if (token) {
-  Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages()]);
+  Promise.all([loadProducts(), loadCategories(), loadOrders(), loadModules(), loadPages(), loadCampaigns(), loadReports()]);
 } else {
   loadProducts();
   loadOrders();
   loadModules();
   loadPages();
+  loadCampaigns();
+  loadReports();
 }

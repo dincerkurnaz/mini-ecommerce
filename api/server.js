@@ -20,6 +20,7 @@ const categoriesPath = path.join(__dirname, 'data', 'categories.json');
 const ordersPath = path.join(__dirname, 'data', 'orders.json');
 const modulesPath = path.join(__dirname, 'data', 'modules.json');
 const pagesPath = path.join(__dirname, 'data', 'pages.json');
+const campaignsPath = path.join(__dirname, 'data', 'campaigns.json');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -59,6 +60,8 @@ function readModules() {
 function writeModules(data) { writeJson(modulesPath, data); }
 function readPages() { return readJson(pagesPath, []); }
 function writePages(data) { writeJson(pagesPath, data); }
+function readCampaigns() { return readJson(campaignsPath, []); }
+function writeCampaigns(data) { writeJson(campaignsPath, data); }
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -68,12 +71,31 @@ function calculateCartTotals(items) {
   const normalizedItems = items.map((rawItem) => {
     const product = catalog.find((p) => p.id === rawItem.productId);
     if (!product) throw new Error(`Geçersiz ürün: ${rawItem.productId}`);
+
     const quantity = Number(rawItem.quantity);
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new Error(`Geçersiz adet (${rawItem.productId}): ${rawItem.quantity}`);
-    const lineTotal = toMoney(product.price * quantity);
+
+    const variantCode = rawItem.variantCode ? String(rawItem.variantCode) : null;
+    const variant = variantCode ? (product.variants || []).find((v) => v.code === variantCode) : null;
+    if (variantCode && !variant) throw new Error(`Geçersiz varyant: ${variantCode}`);
+
+    const availableStock = Number(product.stock || 0);
+    if (quantity > availableStock) throw new Error(`Stok yetersiz (${product.name}). Mevcut: ${availableStock}`);
+
+    const unitPrice = toMoney(Number(product.price) + Number(variant?.priceDelta || 0));
+    const lineTotal = toMoney(unitPrice * quantity);
     subtotal = toMoney(subtotal + lineTotal);
-    return { productId: product.id, name: product.name, unitPrice: product.price, quantity, lineTotal };
+
+    return {
+      productId: product.id,
+      variantCode,
+      name: product.name,
+      unitPrice,
+      quantity,
+      lineTotal
+    };
   });
+
   const shipping = subtotal >= 1000 ? 0 : 79.9;
   const total = toMoney(subtotal + shipping);
   return { items: normalizedItems, subtotal, shipping, total, currency: 'TRY' };
@@ -113,6 +135,7 @@ app.get('/api/products/:slug', (req, res) => {
 });
 
 app.get('/api/categories', (_, res) => res.status(200).json({ categories: readCategories() }));
+app.get('/api/campaigns', (_, res) => res.status(200).json({ campaigns: readCampaigns().filter((c) => c.enabled) }));
 app.get('/api/pages', (_, res) => res.status(200).json({ pages: readPages() }));
 app.get('/api/pages/:slug', (req, res) => {
   const page = readPages().find((p) => p.slug === req.params.slug);
@@ -157,6 +180,20 @@ app.post('/api/checkout', (req, res) => {
   if (!selectedShipping) return res.status(400).json({ error: 'Geçersiz veya pasif kargo yöntemi.' });
   if (!selectedPayment) return res.status(400).json({ error: 'Geçersiz veya pasif ödeme yöntemi.' });
 
+  const products = readProducts();
+  for (const item of cart.items) {
+    const pIdx = products.findIndex((p) => p.id === item.productId);
+    if (pIdx < 0) return res.status(400).json({ error: `Ürün bulunamadı: ${item.productId}` });
+    const currentStock = Number(products[pIdx].stock || 0);
+    if (item.quantity > currentStock) {
+      return res.status(400).json({ error: `${products[pIdx].name} için stok yetersiz.` });
+    }
+    products[pIdx].stock = currentStock - item.quantity;
+  }
+
+  const activeCampaigns = readCampaigns().filter((c) => c.enabled);
+  const selectedCampaign = couponCode ? activeCampaigns.find((c) => c.name.toUpperCase() === String(couponCode).toUpperCase()) : null;
+
   const orderId = 'ord_' + crypto.randomBytes(6).toString('hex');
   const paidAt = new Date().toISOString();
   const order = {
@@ -169,10 +206,12 @@ app.post('/api/checkout', (req, res) => {
     shippingMethod: selectedShipping.code,
     paymentMethod: selectedPayment.code,
     couponCode: couponCode || null,
+    campaignId: selectedCampaign ? selectedCampaign.id : null,
     createdAt: paidAt,
     paidAt
   };
 
+  writeProducts(products);
   const orders = readOrders();
   orders.unshift(order);
   writeOrders(orders);
@@ -201,6 +240,7 @@ app.get('/api/admin/products', requireAdmin, (_, res) => res.status(200).json({ 
 app.get('/api/admin/categories', requireAdmin, (_, res) => res.status(200).json({ categories: readCategories() }));
 app.get('/api/admin/modules', requireAdmin, (_, res) => res.status(200).json(readModules()));
 app.get('/api/admin/pages', requireAdmin, (_, res) => res.status(200).json({ pages: readPages() }));
+app.get('/api/admin/campaigns', requireAdmin, (_, res) => res.status(200).json({ campaigns: readCampaigns() }));
 
 app.post('/api/admin/categories', requireAdmin, (req, res) => {
   const { name } = req.body || {};
@@ -322,6 +362,52 @@ app.delete('/api/admin/pages/:id', requireAdmin, (req, res) => {
   if (next.length === pages.length) return res.status(404).json({ error: 'Sayfa bulunamadı' });
   writePages(next);
   res.status(200).json({ ok: true });
+});
+
+app.post('/api/admin/campaigns', requireAdmin, (req, res) => {
+  const { name, type, value } = req.body || {};
+  if (!name || !type || value === undefined) return res.status(400).json({ error: 'name/type/value zorunlu' });
+  const campaigns = readCampaigns();
+  const campaign = {
+    id: 'cmp-' + crypto.randomBytes(3).toString('hex'),
+    name: String(name).toUpperCase(),
+    type,
+    value: Number(value),
+    enabled: true,
+    updatedAt: new Date().toISOString()
+  };
+  campaigns.push(campaign);
+  writeCampaigns(campaigns);
+  res.status(201).json({ campaign });
+});
+
+app.put('/api/admin/campaigns/:id', requireAdmin, (req, res) => {
+  const campaigns = readCampaigns();
+  const idx = campaigns.findIndex((c) => c.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'Kampanya bulunamadı' });
+  campaigns[idx] = { ...campaigns[idx], ...req.body, updatedAt: new Date().toISOString() };
+  writeCampaigns(campaigns);
+  res.status(200).json({ campaign: campaigns[idx] });
+});
+
+app.get('/api/admin/reports/summary', requireAdmin, (_, res) => {
+  const orders = readOrders();
+  const products = readProducts();
+  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.amount || 0), 0);
+  const totalOrders = orders.length;
+  const lowStockCount = products.filter((p) => Number(p.stock || 0) <= 10).length;
+  res.status(200).json({
+    totalRevenue: toMoney(totalRevenue),
+    totalOrders,
+    lowStockCount,
+    topProducts: products
+      .map((p) => {
+        const sold = orders.reduce((sum, o) => sum + (o.items || []).filter((i) => i.productId === p.id).reduce((s, i) => s + Number(i.quantity || 0), 0), 0);
+        return { id: p.id, name: p.name, sold };
+      })
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 5)
+  });
 });
 
 app.get('/api/admin/orders', requireAdmin, (_, res) => {
