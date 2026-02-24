@@ -12,9 +12,9 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://www.localhost:3000,h
 
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@mini.local';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-const adminSessions = new Map();
-const customerSessions = new Map();
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
+const ADMIN_MAX_ATTEMPTS = Number(process.env.ADMIN_MAX_ATTEMPTS || 5);
+const ADMIN_LOCK_MS = Number(process.env.ADMIN_LOCK_MS || 15 * 60 * 1000);
 
 const productsPath = path.join(__dirname, 'data', 'products.json');
 const categoriesPath = path.join(__dirname, 'data', 'categories.json');
@@ -23,6 +23,9 @@ const modulesPath = path.join(__dirname, 'data', 'modules.json');
 const pagesPath = path.join(__dirname, 'data', 'pages.json');
 const campaignsPath = path.join(__dirname, 'data', 'campaigns.json');
 const usersPath = path.join(__dirname, 'data', 'users.json');
+const sessionsPath = path.join(__dirname, 'data', 'sessions.json');
+const authStatePath = path.join(__dirname, 'data', 'auth_state.json');
+const auditLogPath = path.join(__dirname, 'data', 'audit.log');
 
 app.use(cors({ origin(origin, callback) { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS blocked for origin: ' + origin)); } }));
 app.use(express.json({ limit: '100kb' }));
@@ -66,6 +69,15 @@ function readCampaigns() { return readJson(campaignsPath, []); }
 function writeCampaigns(data) { writeJson(campaignsPath, data); }
 function readUsers() { return readJson(usersPath, []); }
 function writeUsers(data) { writeJson(usersPath, data); }
+function readSessions() { return readJson(sessionsPath, []); }
+function writeSessions(data) { writeJson(sessionsPath, data); }
+function readAuthState() { return readJson(authStatePath, { adminFails: {} }); }
+function writeAuthState(data) { writeJson(authStatePath, data); }
+
+function audit(event, details = {}) {
+  const line = JSON.stringify({ at: new Date().toISOString(), event, ...details });
+  fs.appendFileSync(auditLogPath, line + '\n', 'utf-8');
+}
 
 function toMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
@@ -107,16 +119,32 @@ function calculateCartTotals(items) {
 
 function cleanExpiredSessions() {
   const now = Date.now();
-  for (const [token, session] of adminSessions.entries()) if (session.expiresAt <= now) adminSessions.delete(token);
-  for (const [token, session] of customerSessions.entries()) if (session.expiresAt <= now) customerSessions.delete(token);
+  const active = readSessions().filter((s) => Number(s.expiresAt || 0) > now);
+  writeSessions(active);
+  return active;
+}
+
+function createSession(role, payload = {}) {
+  const token = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  const sessions = cleanExpiredSessions();
+  sessions.push({ token, role, expiresAt, ...payload });
+  writeSessions(sessions);
+  return { token, expiresAt };
+}
+
+function getSessionByToken(token, role) {
+  if (!token) return null;
+  const sessions = cleanExpiredSessions();
+  return sessions.find((s) => s.token === token && s.role === role) || null;
 }
 
 function requireAdmin(req, res, next) {
-  cleanExpiredSessions();
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token || !adminSessions.has(token)) return res.status(401).json({ error: 'Yetkisiz erişim' });
-  req.admin = adminSessions.get(token);
+  const session = getSessionByToken(token, 'admin');
+  if (!session) return res.status(401).json({ error: 'Yetkisiz erişim' });
+  req.admin = session;
   return next();
 }
 
@@ -127,6 +155,27 @@ function parseBearerToken(req) {
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
+}
+
+function adminAttemptKey(email, ip) {
+  return `${normalizeEmail(email)}|${ip || 'unknown'}`;
+}
+
+function getAdminFailRecord(key) {
+  const state = readAuthState();
+  return state.adminFails[key] || { count: 0, lockUntil: 0 };
+}
+
+function setAdminFailRecord(key, record) {
+  const state = readAuthState();
+  state.adminFails[key] = record;
+  writeAuthState(state);
+}
+
+function clearAdminFailRecord(key) {
+  const state = readAuthState();
+  delete state.adminFails[key];
+  writeAuthState(state);
 }
 
 function hashPassword(password) {
@@ -146,15 +195,11 @@ function verifyPassword(password, stored) {
 }
 
 function getCustomerFromRequest(req) {
-  cleanExpiredSessions();
   const token = parseBearerToken(req);
-  if (!token || !customerSessions.has(token)) return null;
-  const session = customerSessions.get(token);
+  const session = getSessionByToken(token, 'customer');
+  if (!session) return null;
   const user = readUsers().find((u) => u.id === session.userId);
-  if (!user) {
-    customerSessions.delete(token);
-    return null;
-  }
+  if (!user) return null;
   return { token, session, user };
 }
 
@@ -282,10 +327,25 @@ app.post('/api/checkout', (req, res) => {
 
 app.post('/api/admin/login', (req, res) => {
   const { email, password } = req.body || {};
-  if (email !== adminEmail || password !== adminPassword) return res.status(401).json({ error: 'Geçersiz giriş bilgisi' });
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  adminSessions.set(token, { email, expiresAt });
+  const key = adminAttemptKey(email, req.ip);
+  const fail = getAdminFailRecord(key);
+
+  if (fail.lockUntil && Date.now() < fail.lockUntil) {
+    audit('admin_login_blocked', { email: normalizeEmail(email), ip: req.ip, lockUntil: fail.lockUntil });
+    return res.status(429).json({ error: 'Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.' });
+  }
+
+  if (email !== adminEmail || password !== adminPassword) {
+    const count = Number(fail.count || 0) + 1;
+    const lockUntil = count >= ADMIN_MAX_ATTEMPTS ? Date.now() + ADMIN_LOCK_MS : 0;
+    setAdminFailRecord(key, { count, lockUntil, updatedAt: Date.now() });
+    audit('admin_login_failed', { email: normalizeEmail(email), ip: req.ip, count, lockUntil });
+    return res.status(401).json({ error: 'Geçersiz giriş bilgisi' });
+  }
+
+  clearAdminFailRecord(key);
+  const { token, expiresAt } = createSession('admin', { email: normalizeEmail(email) });
+  audit('admin_login_success', { email: normalizeEmail(email), ip: req.ip, expiresAt });
   return res.status(200).json({ token, expiresAt });
 });
 
@@ -314,9 +374,8 @@ app.post('/api/auth/register', (req, res) => {
   users.push(user);
   writeUsers(users);
 
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  customerSessions.set(token, { userId: user.id, expiresAt });
+  const { token, expiresAt } = createSession('customer', { userId: user.id });
+  audit('customer_register', { userId: user.id, email: user.email, ip: req.ip });
   return res.status(201).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
 });
 
@@ -328,9 +387,8 @@ app.post('/api/auth/login', (req, res) => {
   const user = readUsers().find((u) => u.email === normalizedEmail);
   if (!user || !verifyPassword(String(password), user.passwordHash)) return res.status(401).json({ error: 'Geçersiz giriş bilgisi' });
 
-  const token = crypto.randomBytes(24).toString('hex');
-  const expiresAt = Date.now() + SESSION_TTL_MS;
-  customerSessions.set(token, { userId: user.id, expiresAt });
+  const { token, expiresAt } = createSession('customer', { userId: user.id });
+  audit('customer_login_success', { userId: user.id, email: user.email, ip: req.ip });
   return res.status(200).json({ token, expiresAt, user: { id: user.id, name: user.name, email: user.email } });
 });
 

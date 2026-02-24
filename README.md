@@ -100,6 +100,18 @@ Bu proje, üretime yakın minimal bir e-ticaret iskeletidir:
 - UI: müşteri hesabı ayrı sayfada (`/account.html`) yönetilir.
 - Sepet/checkout ayrı sayfaya taşındı: `/cart.html` (ana sayfada ürün odaklı sade liste).
 
+## Güvenlik Güncellemesi (İstediğin 4 ve 6)
+
+- **4) Admin auth güçlendirme**
+  - Başarısız giriş denemeleri IP+email bazında izlenir.
+  - Belirli sayıda hatadan sonra geçici lock uygulanır (varsayılan: 5 deneme, 15 dk).
+  - Audit kayıtları `api/data/audit.log` dosyasına JSONL olarak yazılır.
+
+- **6) Session store iyileştirme**
+  - In-memory yerine dosya tabanlı session store kullanılır: `api/data/sessions.json`.
+  - Süresi dolan session’lar otomatik temizlenir.
+  - Admin ve müşteri oturumları aynı store üzerinde role ayrımı ile yönetilir.
+
 ## Klasör Yapısı
 
 ```txt
