@@ -20,7 +20,10 @@ function isAllowedOrigin(origin) {
   if (allowedOrigins.includes(normalized)) return true;
   try {
     const host = new URL(normalized).host.toLowerCase();
-    return allowedOriginHosts.includes(host);
+    if (allowedOriginHosts.includes(host)) return true;
+    if (host.endsWith('.elifkurnaz.online') || host === 'elifkurnaz.online') return true;
+    if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) return true;
+    return false;
   } catch {
     return false;
   }
