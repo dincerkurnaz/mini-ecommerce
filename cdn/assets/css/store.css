@@ -50,8 +50,10 @@ body {
 .coupon-row input {
   border: 1px solid var(--line);
   background: #fff;
-  border-radius: 8px;
-  padding: 0.65rem;
+  border-radius: 10px;
+  padding: 0.75rem;
+  min-height: 44px;
+  font-size: 16px;
 }
 
 .layout {
@@ -105,8 +107,9 @@ button {
   border: none;
   background: var(--accent);
   color: #fff;
-  border-radius: 8px;
-  padding: 0.65rem;
+  border-radius: 10px;
+  padding: 0.75rem;
+  min-height: 44px;
   cursor: pointer;
 }
 
@@ -198,4 +201,26 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .toolbar { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .shell { padding: 0.75rem; }
+  .header h1 { font-size: 1.5rem; }
+  .header { align-items: flex-start; }
+  .grid { grid-template-columns: 1fr; }
+  .product p { min-height: unset; }
+
+  .cart {
+    position: relative;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  #checkout-btn {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    z-index: 50;
+    box-shadow: 0 10px 25px rgba(11, 108, 255, 0.35);
+  }
 }
