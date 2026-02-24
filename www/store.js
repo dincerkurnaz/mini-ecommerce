@@ -18,8 +18,7 @@ const state = {
   sort: 'featured',
   category: '',
   paymentMethod: 'mock_card',
-  customerToken: localStorage.getItem(CUSTOMER_TOKEN_KEY) || '',
-  customerUser: null
+  customerToken: localStorage.getItem(CUSTOMER_TOKEN_KEY) || ''
 };
 
 const els = {
@@ -39,19 +38,7 @@ const els = {
   applyCouponBtn: document.getElementById('apply-coupon-btn'),
   checkoutForm: document.getElementById('checkout-form'),
   paymentMethod: document.getElementById('payment-method'),
-  shippingMethods: document.getElementById('shipping-methods'),
-  customerAuthState: document.getElementById('customer-auth-state'),
-  customerAuthUser: document.getElementById('customer-auth-user'),
-  customerLoginForm: document.getElementById('customer-login-form'),
-  customerRegisterForm: document.getElementById('customer-register-form'),
-  customerLoginEmail: document.getElementById('customer-login-email'),
-  customerLoginPassword: document.getElementById('customer-login-password'),
-  customerRegisterName: document.getElementById('customer-register-name'),
-  customerRegisterEmail: document.getElementById('customer-register-email'),
-  customerRegisterPassword: document.getElementById('customer-register-password'),
-  customerLogoutBtn: document.getElementById('customer-logout-btn'),
-  customerAuthStatus: document.getElementById('customer-auth-status'),
-  myOrdersCount: document.getElementById('my-orders-count')
+  shippingMethods: document.getElementById('shipping-methods')
 };
 
 function formatTRY(value) {
@@ -69,140 +56,10 @@ function setStatus(message, isError = false) {
   els.status.style.color = isError ? '#b00020' : '#0a7a2f';
 }
 
-function setAuthStatus(message, isError = false) {
-  els.customerAuthStatus.textContent = message;
-  els.customerAuthStatus.style.color = isError ? '#b00020' : '#0a7a2f';
-}
-
 function authHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   if (state.customerToken) headers.Authorization = `Bearer ${state.customerToken}`;
   return headers;
-}
-
-function setCustomerSession(token, user) {
-  state.customerToken = token;
-  state.customerUser = user;
-  if (token) {
-    localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
-  }
-}
-
-function clearCustomerSession() {
-  setCustomerSession('', null);
-  renderCustomerAuth();
-}
-
-function renderCustomerAuth() {
-  const loggedIn = !!state.customerUser;
-  els.customerAuthState.style.display = loggedIn ? 'flex' : 'none';
-  els.customerLoginForm.style.display = loggedIn ? 'none' : 'grid';
-  els.customerRegisterForm.style.display = loggedIn ? 'none' : 'grid';
-
-  if (loggedIn) {
-    els.customerAuthUser.textContent = `${state.customerUser.name} (${state.customerUser.email})`;
-    document.getElementById('customer-name').value = state.customerUser.name || '';
-    document.getElementById('customer-email').value = state.customerUser.email || '';
-  }
-}
-
-async function loadMyOrdersCount() {
-  if (!state.customerToken) {
-    els.myOrdersCount.textContent = 'Son sipariş sayısı: 0';
-    return;
-  }
-  try {
-    const res = await fetch(`${config.apiBaseUrl}/api/auth/orders`, { headers: authHeaders() });
-    if (res.status === 401) {
-      clearCustomerSession();
-      els.myOrdersCount.textContent = 'Son sipariş sayısı: 0';
-      return;
-    }
-    const data = await res.json();
-    const orders = data.orders || [];
-    els.myOrdersCount.textContent = `Son sipariş sayısı: ${orders.length}`;
-  } catch {
-    els.myOrdersCount.textContent = 'Son sipariş sayısı: 0';
-  }
-}
-
-async function syncCustomerSession() {
-  if (!state.customerToken) {
-    renderCustomerAuth();
-    return;
-  }
-  try {
-    const res = await fetch(`${config.apiBaseUrl}/api/auth/me`, { headers: authHeaders() });
-    if (!res.ok) throw new Error('Oturum geçersiz');
-    const data = await res.json();
-    setCustomerSession(state.customerToken, data.user || null);
-  } catch {
-    setCustomerSession('', null);
-  }
-  renderCustomerAuth();
-}
-
-async function loginCustomer(event) {
-  event.preventDefault();
-  const email = els.customerLoginEmail.value.trim();
-  const password = els.customerLoginPassword.value.trim();
-  if (!email || !password) {
-    setAuthStatus('E-posta ve şifre zorunludur.', true);
-    return;
-  }
-
-  try {
-    const res = await fetch(`${config.apiBaseUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Giriş yapılamadı');
-    setCustomerSession(data.token, data.user);
-    renderCustomerAuth();
-    await loadMyOrdersCount();
-    els.customerLoginForm.reset();
-    setAuthStatus('Giriş başarılı.');
-  } catch (error) {
-    setAuthStatus(error.message || 'Giriş sırasında hata oluştu.', true);
-  }
-}
-
-async function registerCustomer(event) {
-  event.preventDefault();
-  const name = els.customerRegisterName.value.trim();
-  const email = els.customerRegisterEmail.value.trim();
-  const password = els.customerRegisterPassword.value.trim();
-  if (!name || !email || !password) {
-    setAuthStatus('Ad, e-posta ve şifre zorunludur.', true);
-    return;
-  }
-  try {
-    const res = await fetch(`${config.apiBaseUrl}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Kayıt oluşturulamadı');
-    setCustomerSession(data.token, data.user);
-    renderCustomerAuth();
-    await loadMyOrdersCount();
-    els.customerRegisterForm.reset();
-    setAuthStatus('Kayıt tamamlandı ve giriş yapıldı.');
-  } catch (error) {
-    setAuthStatus(error.message || 'Kayıt sırasında hata oluştu.', true);
-  }
-}
-
-function logoutCustomer() {
-  clearCustomerSession();
-  document.getElementById('customer-email').value = '';
-  setAuthStatus('Çıkış yapıldı.');
-  els.myOrdersCount.textContent = 'Son sipariş sayısı: 0';
 }
 
 function persistCart() {
@@ -407,6 +264,19 @@ function validateCheckoutForm() {
   return null;
 }
 
+async function hydrateCheckoutFromUser() {
+  if (!state.customerToken) return;
+  try {
+    const res = await fetch(`${config.apiBaseUrl}/api/auth/me`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('customer-name').value = data.user?.name || '';
+    document.getElementById('customer-email').value = data.user?.email || '';
+  } catch {
+    // ignore
+  }
+}
+
 async function checkout(event) {
   event.preventDefault();
 
@@ -461,11 +331,7 @@ async function checkout(event) {
     persistCart();
     renderCart();
     els.checkoutForm.reset();
-    if (state.customerUser) {
-      document.getElementById('customer-name').value = state.customerUser.name || '';
-      document.getElementById('customer-email').value = state.customerUser.email || '';
-      await loadMyOrdersCount();
-    }
+    await hydrateCheckoutFromUser();
   } catch (error) {
     setStatus(error.message || 'Checkout sırasında hata oluştu.', true);
   }
@@ -518,9 +384,6 @@ function wireEvents() {
   });
 
   els.checkoutForm.addEventListener('submit', checkout);
-  els.customerLoginForm.addEventListener('submit', loginCustomer);
-  els.customerRegisterForm.addEventListener('submit', registerCustomer);
-  els.customerLogoutBtn.addEventListener('click', logoutCustomer);
 }
 
 async function loadProductsFromApi() {
@@ -584,8 +447,7 @@ async function loadCheckoutMethodsFromApi() {
 async function bootstrap() {
   await Promise.all([loadProductsFromApi(), loadCategoriesFromApi(), loadCheckoutMethodsFromApi()]);
   loadCart();
-  await syncCustomerSession();
-  await loadMyOrdersCount();
+  await hydrateCheckoutFromUser();
   wireEvents();
   renderProducts();
   renderCart();

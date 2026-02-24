@@ -46,6 +46,7 @@
         <p>Üyeliksiz alışveriş · Güvenli ödeme simülasyonu · Hızlı teslimat</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <a href="/account.html" class="ghost" style="padding:10px 12px;border-radius:10px;text-decoration:none;">Hesabım</a>
         <a href="/admin.html" class="ghost" style="padding:10px 12px;border-radius:10px;text-decoration:none;">Admin</a>
         <div class="header-badge">Sepet: <strong id="header-cart-count">0</strong></div>
       </div>
@@ -95,26 +96,6 @@
           <div class="grand"><span>Toplam</span><strong id="grand-total">0.00 TRY</strong></div>
         </div>
 
-        <section class="summary">
-          <h3 style="margin:0 0 8px;">Hesabım</h3>
-          <div id="customer-auth-state" style="display:none;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <small id="customer-auth-user">Giriş yapıldı</small>
-            <button id="customer-logout-btn" type="button" class="ghost" style="padding:6px 10px;min-height:auto;">Çıkış</button>
-          </div>
-          <small id="my-orders-count">Son sipariş sayısı: 0</small>
-          <form id="customer-login-form" class="checkout-form" style="margin-top:8px;">
-            <input id="customer-login-email" type="email" placeholder="E-posta ile giriş" />
-            <input id="customer-login-password" type="password" placeholder="Şifre" />
-            <button type="submit" class="ghost">Giriş Yap</button>
-          </form>
-          <form id="customer-register-form" class="checkout-form" style="margin-top:8px;">
-            <input id="customer-register-name" type="text" placeholder="Ad Soyad" />
-            <input id="customer-register-email" type="email" placeholder="Yeni e-posta" />
-            <input id="customer-register-password" type="password" placeholder="Yeni şifre" />
-            <button type="submit" class="ghost">Kayıt Ol</button>
-          </form>
-          <p id="customer-auth-status" class="status" aria-live="polite"></p>
-        </section>
 
         <form id="checkout-form" class="checkout-form">
           <h3>Misafir Ödeme</h3>

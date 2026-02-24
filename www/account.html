@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hesabım | Mini Commerce</title>
+    <script>
+      (function initConfig() {
+        var host = window.location.hostname;
+        if (host === 'www.localhost') {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'http://api.localhost', cdnBaseUrl: 'http://cdn.localhost' };
+        } else if (host === 'localhost' || host === '127.0.0.1') {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'http://localhost:3001', cdnBaseUrl: 'http://localhost:3002' };
+        } else {
+          window.__APP_CONFIG__ = { apiBaseUrl: 'https://api.example.com', cdnBaseUrl: 'https://cdn.example.com' };
+        }
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = window.__APP_CONFIG__.cdnBaseUrl + '/assets/css/store.css';
+        document.head.appendChild(link);
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="shell header">
+      <div>
+        <h1>Hesabım</h1>
+        <p>Kayıt ol, giriş yap, siparişlerini takip et.</p>
+      </div>
+      <a href="/" class="ghost" style="padding:10px 12px;border-radius:10px;text-decoration:none;">Mağazaya dön</a>
+    </header>
+
+    <main class="shell layout">
+      <section class="card">
+        <h2>Giriş</h2>
+        <form id="customer-login-form" class="checkout-form">
+          <input id="customer-login-email" type="email" placeholder="E-posta" required />
+          <input id="customer-login-password" type="password" placeholder="Şifre" required />
+          <button type="submit">Giriş Yap</button>
+        </form>
+
+        <h2 style="margin-top:16px;">Kayıt</h2>
+        <form id="customer-register-form" class="checkout-form">
+          <input id="customer-register-name" type="text" placeholder="Ad Soyad" required />
+          <input id="customer-register-email" type="email" placeholder="E-posta" required />
+          <input id="customer-register-password" type="password" placeholder="Şifre (min 6)" required />
+          <button type="submit">Kayıt Ol</button>
+        </form>
+        <p id="customer-auth-status" class="status"></p>
+      </section>
+
+      <aside class="card">
+        <h2>Profil</h2>
+        <div id="customer-auth-state" style="display:none;">
+          <p id="customer-auth-user"></p>
+          <button id="customer-logout-btn" type="button" class="ghost">Çıkış Yap</button>
+        </div>
+        <div id="customer-auth-empty">Henüz giriş yapılmadı.</div>
+
+        <h2 style="margin-top:16px;">Siparişlerim</h2>
+        <div id="my-orders-count">Toplam sipariş: 0</div>
+        <div id="my-orders-list" class="cart-items" style="margin-top:8px;"></div>
+      </aside>
+    </main>
+
+    <script src="./account.js" defer></script>
+  </body>
+</html>
